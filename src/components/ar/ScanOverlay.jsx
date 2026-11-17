@@ -52,7 +52,7 @@ export const ScanOverlay = ({
     };
   }
 
-  // Single Suggested Mobile (Guaranteed 1 suggestion as user requested: "enaku oru phone suggest venum")
+  // Genuine AI Suggested Mobile (Only suggests if AI actually detected clues, never fake hardcoded)
   const resolvedSuggestedPhone = useMemo(() => {
     if (suggestedPhone) return suggestedPhone;
     if (detectedPhone) return detectedPhone;
@@ -64,13 +64,8 @@ export const ScanOverlay = ({
       if (brandMatch) return brandMatch;
     }
 
-    // Default top curated flagship recommendation
-    return (
-      phones.find((p) => p.id.includes('redmi-note-10-pro')) ||
-      phones.find((p) => p.id.includes('s24-ultra')) ||
-      phones.find((p) => p.id.includes('hot-11s')) ||
-      phones[0]
-    );
+    // Never return a hardcoded random fallback!
+    return null;
   }, [phones, suggestedPhone, detectedPhone, detectedBrand]);
 
   // Inline search filter

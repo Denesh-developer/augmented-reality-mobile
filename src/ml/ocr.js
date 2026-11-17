@@ -121,18 +121,18 @@ function preprocessForOCR(srcCanvas) {
 
 // Brand dictionary for fuzzy and exact matching
 const BRAND_PATTERNS = [
-  { brand: 'Samsung', aliases: ['samsung', 'galaxy', 'samz', 'samung'] },
+  { brand: 'Samsung', aliases: ['samsung', 'galaxy', 'samz', 'samung', 'amsun', 'msung', 's21', 's22', 's23', 's24'] },
   { brand: 'Apple', aliases: ['apple', 'iphone', 'designed by apple', 'iphne', 'ipho'] },
-  { brand: 'OnePlus', aliases: ['oneplus', 'one plus', 'never settle', '1+'] },
+  { brand: 'OnePlus', aliases: ['oneplus', 'one plus', 'never settle', '1+', 'neplus'] },
   { brand: 'Xiaomi', aliases: ['xiaomi', 'mi ', 'miui', 'xiaom'] },
   { brand: 'Redmi', aliases: ['redmi', 'red me', 'rdmi'] },
-  { brand: 'POCO', aliases: ['poco', 'pocophone', 'poko'] },
-  { brand: 'Realme', aliases: ['realme', 'dare to leap', 'relme'] },
-  { brand: 'Vivo', aliases: ['vivo', 'viv0', 'viivo'] },
+  { brand: 'POCO', aliases: ['poco', 'pocophone', 'poko', 'p0co'] },
+  { brand: 'Realme', aliases: ['realme', 'dare to leap', 'relme', 'ealme'] },
+  { brand: 'Vivo', aliases: ['vivo', 'viv0', 'viivo', 'v27', 'v29', 'v30', 'v40'] },
   { brand: 'iQOO', aliases: ['iqoo', 'i qoo', 'monster inside', 'iqo'] },
-  { brand: 'Oppo', aliases: ['oppo', '0ppo', 'op-po'] },
+  { brand: 'Oppo', aliases: ['oppo', '0ppo', 'op-po', 'reno'] },
   { brand: 'Lava', aliases: ['lava', 'agni', 'blaze', 'yuva', 'storm'] },
-  { brand: 'Infinix', aliases: ['infinix', 'zero', 'hot ', 'infnix', 'infin'] },
+  { brand: 'Infinix', aliases: ['infinix', 'zero', 'hot', 'hot11', 'hot12', 'infnix', 'infin', 'nfinix', 'smart'] },
   { brand: 'Tecno', aliases: ['tecno', 'camon', 'spark', 'pova', 'phantom'] },
   { brand: 'Motorola', aliases: ['motorola', 'moto', 'mot0', 'razr', 'edge'] },
   { brand: 'Google', aliases: ['google', 'pixel', 'g00gle', 'pixl'] },
@@ -153,6 +153,7 @@ export async function recognizePhoneFromImage(imageCanvas) {
   if (!imageCanvas || imageCanvas.width < 10 || imageCanvas.height < 10) {
     return {
       matchedPhone: null,
+      suggestedPhone: null,
       detectedBrand: null,
       detectedText: '',
       confidence: 0,
@@ -167,8 +168,37 @@ export async function recognizePhoneFromImage(imageCanvas) {
     const rawText = (ret.data.text || '').toLowerCase().trim();
 
     if (!rawText || rawText.length < 2) {
+      // Visual fallback: if text isn't resolved, check color signature
+      const visuals = analyzePhoneVisuals(imageCanvas);
+      if (visuals) {
+        if (visuals.isCyanTeal) {
+          const infMatch = phones.find(p => p.id === 'infinix-hot-11s-2021') || phones.find(p => p.id === 'infinix-hot-12-play-2022');
+          if (infMatch) {
+            return {
+              matchedPhone: null,
+              suggestedPhone: infMatch,
+              detectedBrand: 'Infinix',
+              detectedText: 'Cyan / Wave Green Visual Signature',
+              confidence: 50,
+            };
+          }
+        }
+        if (visuals.isYellow) {
+          const pocoMatch = phones.find(p => p.brand.toLowerCase() === 'poco');
+          if (pocoMatch) {
+            return {
+              matchedPhone: null,
+              suggestedPhone: pocoMatch,
+              detectedBrand: 'POCO',
+              detectedText: 'Yellow Visual Signature',
+              confidence: 50,
+            };
+          }
+        }
+      }
       return {
         matchedPhone: null,
+        suggestedPhone: null,
         detectedBrand: null,
         detectedText: '',
         confidence: 0,
