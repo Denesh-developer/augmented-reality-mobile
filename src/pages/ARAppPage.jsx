@@ -269,30 +269,34 @@ export const ARAppPage = () => {
                                 }
 
                                 // 4. Palm Closed / Fist -> Assemble All!
-                                if (processed.handAction === 'assemble' && lastActionRef.current !== 'assemble') {
-                                    lastActionRef.current = 'assemble';
-                                    gsap.killTweensOf(explodeFactorObjRef.current);
-                                    gsap.to(explodeFactorObjRef.current, {
-                                        val: 0.0,
-                                        duration: 0.45,
-                                        ease: 'power2.out',
-                                        onUpdate: () => {
-                                            setExplodeFactor(explodeFactorObjRef.current.val);
-                                        },
-                                    });
+                                if (processed.handAction === 'assemble') {
+                                    if (lastActionRef.current !== 'assemble' || explodeFactorObjRef.current.val > 0.02) {
+                                        lastActionRef.current = 'assemble';
+                                        gsap.killTweensOf(explodeFactorObjRef.current);
+                                        gsap.to(explodeFactorObjRef.current, {
+                                            val: 0.0,
+                                            duration: 0.45,
+                                            ease: 'power2.out',
+                                            onUpdate: () => {
+                                                setExplodeFactor(explodeFactorObjRef.current.val);
+                                            },
+                                        });
+                                    }
                                 }
                                 // 5. Two Fingers Opened / Separated -> Disassemble / Explode All!
-                                else if (processed.handAction === 'disassemble' && lastActionRef.current !== 'disassemble') {
-                                    lastActionRef.current = 'disassemble';
-                                    gsap.killTweensOf(explodeFactorObjRef.current);
-                                    gsap.to(explodeFactorObjRef.current, {
-                                        val: 0.95,
-                                        duration: 0.45,
-                                        ease: 'power2.out',
-                                        onUpdate: () => {
-                                            setExplodeFactor(explodeFactorObjRef.current.val);
-                                        },
-                                    });
+                                else if (processed.handAction === 'disassemble') {
+                                    if (lastActionRef.current !== 'disassemble' || explodeFactorObjRef.current.val < 0.85) {
+                                        lastActionRef.current = 'disassemble';
+                                        gsap.killTweensOf(explodeFactorObjRef.current);
+                                        gsap.to(explodeFactorObjRef.current, {
+                                            val: 0.95,
+                                            duration: 0.45,
+                                            ease: 'power2.out',
+                                            onUpdate: () => {
+                                                setExplodeFactor(explodeFactorObjRef.current.val);
+                                            },
+                                        });
+                                    }
                                 }
                                 else if (processed.handAction === 'neutral' && !processed.isTwoFingerJoin) {
                                     lastActionRef.current = 'neutral';

@@ -79,13 +79,16 @@ export class HandGestureEngine {
         const hand = landmarksList[0];
         const wrist = hand[0];
         const thumbTip = hand[4];
+        const indexMcp = hand[5];
         const indexPip = hand[6];
         const indexTip = hand[8];
         const middleMcp = hand[9];
         const middlePip = hand[10];
         const middleTip = hand[12];
+        const ringMcp = hand[13];
         const ringPip = hand[14];
         const ringTip = hand[16];
+        const pinkyMcp = hand[17];
         const pinkyPip = hand[18];
         const pinkyTip = hand[20];
 
@@ -110,18 +113,32 @@ export class HandGestureEngine {
         const dWristPinkyTip = Math.hypot(pinkyTip.x - wrist.x, pinkyTip.y - wrist.y);
         const dWristPinkyPip = Math.hypot(pinkyPip.x - wrist.x, pinkyPip.y - wrist.y);
 
-        const indexCurled = dWristIndexTip < dWristIndexPip * 1.05;
-        const middleCurled = dWristMiddleTip < dWristMiddlePip * 1.05;
-        const ringCurled = dWristRingTip < dWristRingPip * 1.05;
-        const pinkyCurled = dWristPinkyTip < dWristPinkyPip * 1.05;
+        const dIndexTipMcp = Math.hypot(indexTip.x - indexMcp.x, indexTip.y - indexMcp.y);
+        const dMiddleTipMcp = Math.hypot(middleTip.x - middleMcp.x, middleTip.y - middleMcp.y);
+        const dRingTipMcp = Math.hypot(ringTip.x - ringMcp.x, ringTip.y - ringMcp.y);
+        const dPinkyTipMcp = Math.hypot(pinkyTip.x - pinkyMcp.x, pinkyTip.y - pinkyMcp.y);
+
+        const indexCurled = (dWristIndexTip < dWristIndexPip * 1.15) || (dIndexTipMcp < handScale * 0.72);
+        const middleCurled = (dWristMiddleTip < dWristMiddlePip * 1.15) || (dMiddleTipMcp < handScale * 0.72);
+        const ringCurled = (dWristRingTip < dWristRingPip * 1.15) || (dRingTipMcp < handScale * 0.72);
+        const pinkyCurled = (dWristPinkyTip < dWristPinkyPip * 1.15) || (dPinkyTipMcp < handScale * 0.72);
+
+        const curledCount = (indexCurled ? 1 : 0) + (middleCurled ? 1 : 0) + (ringCurled ? 1 : 0) + (pinkyCurled ? 1 : 0);
+        const avgTipDistToPalm = (
+            Math.hypot(indexTip.x - rawPalmX, indexTip.y - rawPalmY) +
+            Math.hypot(middleTip.x - rawPalmX, middleTip.y - rawPalmY) +
+            Math.hypot(ringTip.x - rawPalmX, ringTip.y - rawPalmY) +
+            Math.hypot(pinkyTip.x - rawPalmX, pinkyTip.y - rawPalmY)
+        ) / 4;
+
+        // GESTURE 2: Palm Close / Fist Detection (Robust to all hand angles)
+        const isPalmClosed = curledCount >= 3 || avgTipDistToPalm < handScale * 0.58;
 
         // GESTURE 1 & 4: Two-Finger Join Check (Thumb Tip + Index Tip)
+        // CRITICAL: A true pinch requires the hand NOT to be a closed fist!
         const pinchDistance = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
         const pinchThreshold = Math.max(0.065, handScale * 0.45);
-        const isPinchingNow = pinchDistance < pinchThreshold;
-
-        // GESTURE 2: Palm Close / Fist -> Assemble
-        const isPalmClosed = (indexCurled ? 1 : 0) + (middleCurled ? 1 : 0) + (ringCurled ? 1 : 0) + (pinkyCurled ? 1 : 0) >= 3;
+        const isPinchingNow = !isPalmClosed && (pinchDistance < pinchThreshold);
 
         if (isPinchingNow) {
             isTwoFingerJoin = true;
@@ -136,7 +153,7 @@ export class HandGestureEngine {
             // GESTURE 1: Two-finger touch & open -> Disassemble!
             // Transition from touching/joined fingers to open/separated fingers
             if (this.wasPinching && !isPalmClosed) {
-                if (timestampMs - this.lastActionTime > 260) {
+                if (timestampMs - this.lastActionTime > 250) {
                     handAction = 'disassemble';
                     this.lastActionTime = timestampMs;
                 }
@@ -145,8 +162,8 @@ export class HandGestureEngine {
         this.wasPinching = isPinchingNow;
 
         // GESTURE 2: Palm Close -> Assemble!
-        if (isPalmClosed && !isPinchingNow) {
-            if (timestampMs - this.lastActionTime > 280) {
+        if (isPalmClosed) {
+            if (timestampMs - this.lastActionTime > 200) {
                 handAction = 'assemble';
                 this.lastActionTime = timestampMs;
             }
