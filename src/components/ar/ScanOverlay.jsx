@@ -52,21 +52,58 @@ export const ScanOverlay = ({
     };
   }
 
-  // Genuine AI Suggested Mobile (Only suggests if AI actually detected clues, never fake hardcoded)
-  const resolvedSuggestedPhone = useMemo(() => {
-    if (suggestedPhone) return suggestedPhone;
-    if (detectedPhone) return detectedPhone;
+  const [shuffleSeed, setShuffleSeed] = useState(0);
 
+  // 3 Suggested Mobile Phones (as user requested: "random ah oru 3 mobile phone show panra mari ithula unga mobile irutha choose otherwise select manually")
+  const suggested3Phones = useMemo(() => {
+    // If a brand was detected by AI, prioritize models of that brand
     if (detectedBrand) {
-      const brandMatch = phones.find(
+      const brandPhones = phones.filter(
         (p) => p.brand.toLowerCase() === detectedBrand.toLowerCase()
       );
-      if (brandMatch) return brandMatch;
+      if (brandPhones.length >= 3) {
+        const start = (shuffleSeed * 3) % brandPhones.length;
+        const res = [];
+        for (let i = 0; i < 3; i++) {
+          res.push(brandPhones[(start + i) % brandPhones.length]);
+        }
+        return res;
+      }
+      if (brandPhones.length > 0) {
+        const otherPhones = phones.filter(
+          (p) => p.brand.toLowerCase() !== detectedBrand.toLowerCase()
+        );
+        return [...brandPhones, ...otherPhones.slice(0, 3 - brandPhones.length)];
+      }
     }
 
-    // Never return a hardcoded random fallback!
-    return null;
-  }, [phones, suggestedPhone, detectedPhone, detectedBrand]);
+    // Popular diverse models across key brands (Infinix, Samsung, Apple, Redmi, OnePlus, POCO)
+    const curatedPicks = [
+      'infinix-hot-11s-2021',
+      'samsung-galaxy-s24-ultra-2024',
+      'apple-iphone-15-pro-max-2023',
+      'infinix-hot-12-play-2022',
+      'redmi-redmi-note-10-pro-2021',
+      'oneplus-oneplus-12-2024',
+      'poco-poco-x6-pro-2024',
+      'google-pixel-8-pro-2023',
+      'infinix-note-40-pro-5g-2024',
+      'vivo-v40-pro-2024',
+      'realme-gt-6-2024',
+      'motorola-motorola-edge-50-ultra-2024',
+    ];
+
+    const pool = curatedPicks
+      .map((id) => phones.find((p) => p.id === id))
+      .filter(Boolean);
+
+    const start = (shuffleSeed * 3) % pool.length;
+    const res = [];
+    for (let i = 0; i < 3; i++) {
+      res.push(pool[(start + i) % pool.length]);
+    }
+    return res;
+  }, [phones, detectedBrand, shuffleSeed]);
 
   // Inline search filter
   const matchedPhones = useMemo(() => {
@@ -400,46 +437,66 @@ export const ScanOverlay = ({
                   I'm not able to identify this phone
                 </h4>
                 <p className="text-[11px] text-slate-300 leading-normal">
-                  I'm an AI, so I'm not able to scan the mobile accurately. Otherwise, select manually to teardown your mobile.
+                  I'm an AI, so I'm not able to scan the mobile accurately. If your mobile is in the suggestions below, choose it; otherwise select manually to teardown your mobile.
                 </p>
               </div>
             </div>
 
-            {/* Primary Action Button: Select Manually to Teardown */}
+            {/* 3 Suggested Mobile Phones (as user requested: "random ah oru 3 mobile phone show panra mari ithula unga mobile irutha choose otherwise select manually") */}
+            <div className="pt-1 border-t border-white/10 space-y-1.5">
+              <div className="flex items-center justify-between text-xs px-0.5">
+                <span className="font-mono text-cyan-300 font-semibold flex items-center gap-1.5 text-[11px]">
+                  <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>If your mobile is here, choose it:</span>
+                </span>
+                <button
+                  onClick={() => setShuffleSeed((s) => s + 1)}
+                  className="text-[10px] text-slate-400 hover:text-cyan-300 flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+                  title="Show 3 other suggestions"
+                >
+                  <span>Shuffle 🔀</span>
+                </button>
+              </div>
+
+              {/* 3 Compact Suggestion Rows */}
+              <div className="space-y-1.5">
+                {suggested3Phones.map((phone, idx) => (
+                  <div
+                    key={phone.id}
+                    className="flex items-center justify-between p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-all"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                      <span className="text-[10px] font-mono font-bold w-5 h-5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 flex items-center justify-center flex-shrink-0">
+                        {idx + 1}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-white font-heading truncate">
+                          {phone.displayName || `${phone.brand} ${phone.model}`}
+                        </p>
+                        <p className="text-[10px] font-mono text-slate-400 truncate">
+                          {phone.year} • {phone.soc || phone.chipset}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => onConfirm?.(phone)}
+                      className="px-3 py-1 rounded-lg text-xs font-bold text-navy-950 bg-gradient-to-r from-cyan-400 to-cyan-300 hover:opacity-95 transition-all flex-shrink-0 shadow-cyan-sm active:scale-95 cursor-pointer"
+                    >
+                      Select
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Primary Action Button: Otherwise Select Manually */}
             <button
               onClick={onOpenManualPicker}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-navy-950 bg-gradient-to-r from-cyan-400 to-cyan-300 shadow-cyan-glow hover:opacity-95 active:scale-[0.99] transition-all cursor-pointer"
             >
               <Search className="w-4 h-4" />
-              <span>Select Manually to Teardown Mobile ({phones.length} Models)</span>
+              <span>Otherwise Select Manually ({phones.length} Models)</span>
             </button>
-
-            {/* Guaranteed 1 Suggested Model as user requested: "enaku oru phone suggest venum" */}
-            {resolvedSuggestedPhone && (
-              <div className="pt-1 border-t border-white/10">
-                <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.07] border border-cyan-500/20 transition-all">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 flex-shrink-0">
-                      Suggested
-                    </span>
-                    <div className="min-w-0">
-                      <p className="text-xs font-bold text-white font-heading truncate">
-                        {resolvedSuggestedPhone.displayName || `${resolvedSuggestedPhone.brand} ${resolvedSuggestedPhone.model}`}
-                      </p>
-                      <p className="text-[10px] font-mono text-slate-400">
-                        {resolvedSuggestedPhone.year} • {resolvedSuggestedPhone.soc || resolvedSuggestedPhone.chipset}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => onConfirm?.(resolvedSuggestedPhone)}
-                    className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-navy-950 bg-cyan-400 hover:bg-cyan-300 transition-colors flex-shrink-0 shadow-cyan-sm active:scale-95 cursor-pointer"
-                  >
-                    Select
-                  </button>
-                </div>
-              </div>
-            )}
 
             {/* Quick Inline Search Input */}
             <div className="relative pt-1">
