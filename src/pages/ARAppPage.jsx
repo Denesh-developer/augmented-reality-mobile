@@ -144,13 +144,15 @@ export const ARAppPage = () => {
                                     isOCRRunningRef.current = true;
                                     recognizePhoneFromImage(detectRes.croppedCanvas)
                                         .then((ocrRes) => {
-                                            if (ocrRes.matchedPhone && ocrRes.confidence >= 55) {
+                                            if (ocrRes.matchedPhone && ocrRes.confidence >= 70) {
                                                 setDetectedPhone(ocrRes.matchedPhone);
                                                 setConfidence(ocrRes.confidence);
                                             } else if (ocrRes.detectedBrand) {
                                                 setDetectedBrand(ocrRes.detectedBrand);
-                                                setConfidence(Math.max(72, ocrRes.confidence));
-                                                // Keep exact model unselected so user can accurately confirm!
+                                                setConfidence(Math.max(65, ocrRes.confidence));
+                                                setDetectedPhone(null);
+                                            } else {
+                                                setDetectedPhone(null);
                                             }
                                         })
                                         .finally(() => {
@@ -372,9 +374,13 @@ export const ARAppPage = () => {
           detectedBBox={detectedBBox}
           videoSize={videoSize}
           onConfirm={(chosen) => {
-            const target = chosen || detectedPhone || activePhone || phones[0];
-            setActivePhone(target);
-            setPhase('teardown');
+            const target = chosen || (detectedPhone && confidence >= 70 ? detectedPhone : null);
+            if (target) {
+              setActivePhone(target);
+              setPhase('teardown');
+            } else {
+              setIsModelModalOpen(true);
+            }
           }}
           onWrong={() => {
             setDetectedPhone(null);
@@ -385,7 +391,7 @@ export const ARAppPage = () => {
           onOpenManualPicker={() => setIsModelModalOpen(true)}
           onFlipCamera={toggleFacingMode}
           onSkipToTeardown={() => {
-            const target = detectedPhone || activePhone || phones[0];
+            const target = (detectedPhone && confidence >= 70) ? detectedPhone : (activePhone || phones[0]);
             setActivePhone(target);
             setPhase('teardown');
           }}

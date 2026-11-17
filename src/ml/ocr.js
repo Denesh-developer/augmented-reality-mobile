@@ -243,10 +243,10 @@ export async function recognizePhoneFromImage(imageCanvas) {
     const totalConfidence = Math.min(98, highestScore);
 
     return {
-      matchedPhone: totalConfidence >= 60 ? bestMatch : null,
-      detectedBrand: detectedBrand || (bestMatch && totalConfidence >= 40 ? bestMatch.brand : null),
+      matchedPhone: totalConfidence >= 75 ? bestMatch : null,
+      detectedBrand: detectedBrand || (bestMatch && totalConfidence >= 50 ? bestMatch.brand : null),
       detectedText: textJoined,
-      confidence: totalConfidence >= 60 ? totalConfidence : (detectedBrand ? brandConfidence : 0),
+      confidence: totalConfidence >= 75 ? totalConfidence : (detectedBrand ? brandConfidence : 0),
     };
   } catch (err) {
     console.warn('Enhanced OCR Recognition error:', err);
