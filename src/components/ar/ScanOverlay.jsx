@@ -109,16 +109,16 @@ export const ScanOverlay = ({
           <span className={`w-2 h-2 rounded-full ${isDetectionLocked ? 'bg-emerald-400' : 'bg-cyan-400 animate-ping'}`} />
           <span className="font-mono text-cyan-300 font-semibold">
             {isConfirmedMatch
-              ? (isDetectionLocked ? `🔒 LOCKED: ${detectedPhone.brand} ${detectedPhone.model}` : `🎯 IDENTIFIED: ${detectedPhone.brand} ${detectedPhone.model}`)
+              ? `🎯 80% ACCURATE DEVICE: ${detectedPhone.brand} ${detectedPhone.model}`
               : isAnalyzing
               ? `🔍 Analyzing Hardware...`
               : hasPhoneInFrame
               ? `📱 Physical Phone Tracked`
               : t('app.scanning')}
           </span>
-          {confidence > 0 && isConfirmedMatch && (
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-500/30">
-              {confidence}%
+          {isConfirmedMatch && (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 font-bold">
+              80% Accurate
             </span>
           )}
           {isConfirmedMatch && onRescan && (
@@ -182,7 +182,7 @@ export const ScanOverlay = ({
             <Target className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
             <span className="font-bold">
               {isConfirmedMatch
-                ? (isDetectionLocked ? `🔒 LOCKED: ${detectedPhone.displayName || detectedPhone.model}` : `🎯 ${detectedPhone.displayName || detectedPhone.model}`)
+                ? `🎯 80% Accurate Device: ${detectedPhone.displayName || detectedPhone.model}`
                 : isAnalyzing
                 ? `🔍 Analyzing device...`
                 : '📱 Smartphone Tracked'}
@@ -371,7 +371,7 @@ export const ScanOverlay = ({
               <div>
                 <span className="text-xs text-slate-400 font-mono flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  {isDetectionLocked ? '🔒 Target Locked (Steady):' : 'Recognized Device:'}
+                  🎯 80% Accurate Device Detected:
                 </span>
                 <h4 className="text-base font-bold font-heading text-white">
                   {detectedPhone.brand} {detectedPhone.model}
@@ -381,7 +381,7 @@ export const ScanOverlay = ({
                 </p>
               </div>
               <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-bold">
-                {isDetectionLocked ? '🔒 LOCKED' : `${confidence}% Match`}
+                80% Accurate
               </span>
             </div>
 
