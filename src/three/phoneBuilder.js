@@ -846,7 +846,7 @@ export function createPhone(config) {
 
   const camLayout = config.cameraLayout || 'samsung_vertical_traffic';
 
-  if (camLayout === 'infinix_dual_circle_owl') {
+  if (camLayout === 'infinix_dual_circle_owl' || camLayout === 'infinix_owl_dual') {
     // 1A. Infinix Hot 11S / 10S: Dual-Circle "Owl-Eye" 50MP Camera Design (Exact Google Reference Specs)
     const camShape = createRoundedRectShape(0.82, 1.52, 0.28);
     const islandGeo = new THREE.ExtrudeGeometry(camShape, { depth: 0.08, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.015, bevelThickness: 0.015 });
@@ -919,7 +919,7 @@ export function createPhone(config) {
     flashBar.position.set(ip.x - 0.16, ip.y + 0.18, ip.z - 0.042);
     camGroup.add(flashBar);
 
-  } else if (camLayout === 'infinix_mecha_gaming') {
+  } else if (camLayout === 'infinix_mecha_gaming' || camLayout === 'infinix_matrix_stealth') {
     // 1C. Infinix GT 10 Pro / GT 20 Pro: Cyber Mecha Asymmetrical Armor Plateau
     const camShape = new THREE.Shape();
     camShape.moveTo(-0.48, -0.62);
@@ -1003,7 +1003,7 @@ export function createPhone(config) {
     haloRing.position.set(ip.x + 0.20, ip.y - 0.20, ip.z - 0.042);
     camGroup.add(haloRing);
 
-  } else if (camLayout === 'poco_yellow_banner') {
+  } else if (camLayout === 'poco_yellow_banner' || camLayout === 'poco_wide_visor') {
     // 2. POCO Signature Full-Width Cyber Yellow & Black Banner
     const bannerGeo = new THREE.BoxGeometry(w * 0.94, 0.88, 0.075);
     disposables.push(bannerGeo);
@@ -1115,7 +1115,7 @@ export function createPhone(config) {
     const l2 = createOpticalLens(0.22, new THREE.Vector3(ip.x, ip.y - 0.32, ip.z));
     camGroup.add(l1, l2);
 
-  } else if (camLayout === 'apple_vertical_pill') {
+  } else if (camLayout === 'apple_vertical_pill' || camLayout === 'apple_pill') {
     // 5. Apple iPhone 16 Spatial Video Vertical Capsule
     const camShape = createRoundedRectShape(0.56, 1.12, 0.28);
     const islandGeo = new THREE.ExtrudeGeometry(camShape, { depth: 0.08, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.015, bevelThickness: 0.015 });
@@ -1132,7 +1132,7 @@ export function createPhone(config) {
     const l2 = createOpticalLens(0.16, new THREE.Vector3(ip.x, ip.y - 0.28, ip.z - 0.045));
     camGroup.add(l1, l2);
 
-  } else if (camLayout === 'xiaomi_leica_square') {
+  } else if (camLayout === 'xiaomi_leica_square' || camLayout === 'xiaomi_deco_square') {
     // 6. Xiaomi / Redmi Leica Square Island with Crosshair Grid
     const camShape = createRoundedRectShape(0.88, 0.90, 0.20);
     const islandGeo = new THREE.ExtrudeGeometry(camShape, { depth: 0.08, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.015, bevelThickness: 0.015 });
@@ -1269,7 +1269,7 @@ export function createPhone(config) {
     flash.position.set(w / 2 - 0.55, h / 2 - 0.35, -t / 2 - 0.016);
     camGroup.add(flash);
 
-  } else if (camLayout === 'samsung_floating_rings') {
+  } else if (camLayout === 'samsung_floating_rings' || camLayout === 'samsung_floating_triple' || camLayout === 'samsung_floating_quad') {
     // Standalone Floating Camera Rings (Samsung Galaxy S22/S23/S24 Ultra) - NO PLATE!
     const cX = w / 2 - 0.38;
     const topY = h / 2 - 0.42;
@@ -1350,7 +1350,7 @@ export function createPhone(config) {
     hrSensor.position.set(ip.x + 0.36, ip.y, ip.z - 0.04);
     camGroup.add(hrSensor);
 
-  } else if (camLayout === 'pixel_visor_bar') {
+  } else if (camLayout === 'pixel_visor_bar' || camLayout === 'pixel_visor') {
     // Edge-to-Edge Visor Bar (Google Pixel 6–8)
     const visorGeo = new THREE.BoxGeometry(w * 0.99, 0.48, 0.09);
     disposables.push(visorGeo);
@@ -1370,7 +1370,7 @@ export function createPhone(config) {
     const l3 = createOpticalLens(0.11, new THREE.Vector3(0.12, h / 2 - 0.65, -t / 2 - 0.07));
     camGroup.add(l1, l2, l3);
 
-  } else if (camLayout === 'pixel_oval_island') {
+  } else if (camLayout === 'pixel_oval_island' || camLayout === 'pixel_pill') {
     // Google Pixel 9 Series Floating Pill Visor Island
     const camShape = createRoundedRectShape(w * 0.82, 0.46, 0.23);
     const islandGeo = new THREE.ExtrudeGeometry(camShape, { depth: 0.085, bevelEnabled: true, bevelSegments: 4, bevelSize: 0.015, bevelThickness: 0.015 });
@@ -1404,7 +1404,7 @@ export function createPhone(config) {
     const l2 = createOpticalLens(0.14, new THREE.Vector3(ip.x + 0.14, ip.y - 0.12, ip.z - 0.04));
     camGroup.add(l1, l2);
 
-  } else if (camLayout === 'oneplus_circular_dial' || camLayout === 'circular_hasselblad_dial') {
+  } else if (camLayout === 'oneplus_circular_dial' || camLayout === 'circular_hasselblad_dial' || camLayout === 'oneplus_circular') {
     // Circular Watch-Dial Camera Bump on left spine (OnePlus Hasselblad)
     const islandGeo = new THREE.CylinderGeometry(0.56, 0.60, 0.08, 48);
     islandGeo.rotateX(Math.PI / 2);
@@ -1427,7 +1427,7 @@ export function createPhone(config) {
     const l4 = createOpticalLens(0.14, new THREE.Vector3(ip.x + 0.18, ip.y - 0.18, ip.z - 0.04));
     camGroup.add(l1, l2, l3, l4);
 
-  } else if (camLayout === 'oneplus_vertical_pill') {
+  } else if (camLayout === 'oneplus_vertical_pill' || camLayout === 'oneplus_vertical') {
     // OnePlus Nord / 8 / 9 Vertical Pill Island on Top-Left
     const camShape = createRoundedRectShape(0.58, 1.35, 0.28);
     const islandGeo = new THREE.ExtrudeGeometry(camShape, { depth: 0.075, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.015, bevelThickness: 0.015 });
@@ -1445,7 +1445,7 @@ export function createPhone(config) {
     const l3 = createOpticalLens(0.14, new THREE.Vector3(ip.x, ip.y - 0.38, ip.z - 0.045));
     camGroup.add(l1, l2, l3);
 
-  } else if (camLayout === 'apple_pro_triangle') {
+  } else if (camLayout === 'apple_pro_triangle' || camLayout === 'apple_triple') {
     // Apple Pro Triangle Camera Island (iPhone 11 Pro to 16 Pro)
     const camShape = createRoundedRectShape(0.85, 0.85, 0.22);
     const islandGeo = new THREE.ExtrudeGeometry(camShape, {
@@ -1474,7 +1474,7 @@ export function createPhone(config) {
     const l3 = createOpticalLens(0.16, new THREE.Vector3(ip.x + 0.18, ip.y, ip.z - 0.04));
     camGroup.add(l1, l2, l3);
 
-  } else if (camLayout === 'apple_square_dual' || camLayout === 'apple_square_diagonal') {
+  } else if (camLayout === 'apple_square_dual' || camLayout === 'apple_square_diagonal' || camLayout === 'apple_diagonal') {
     // Apple Diagonal Dual Lens (iPhone 13, 14, 15)
     const camShape = createRoundedRectShape(0.72, 0.72, 0.2);
     const islandGeo = new THREE.ExtrudeGeometry(camShape, { depth: 0.075, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.015, bevelThickness: 0.015 });
