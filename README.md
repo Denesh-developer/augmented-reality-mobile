@@ -3,16 +3,16 @@
 [![React](https://img.shields.io/badge/React-18.x-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
 [![Three.js](https://img.shields.io/badge/Three.js-r128-black?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org/)
 [![MediaPipe](https://img.shields.io/badge/Google%20MediaPipe-Hands%20AI-00897B?style=for-the-badge&logo=google&logoColor=white)](https://developers.google.com/mediapipe)
-[![Devices Supported](https://img.shields.io/badge/Database-1%2C730%2B%20Smartphones-FF6F00?style=for-the-badge&logo=android&logoColor=white)](src/data/phones.json)
+[![Devices Supported](https://img.shields.io/badge/Database-139%20Curated%20Smartphones-FF6F00?style=for-the-badge&logo=android&logoColor=white)](src/data/phones.json)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
-> **An enterprise-grade, zero-download procedural 3D Augmented Reality teardown workstation that reconstructs, explodes, and inspects over 1,730+ real smartphones in real-time with authentic component architectures, dynamic hardware matching, and AI touchless air gesture controls.**
+> **An enterprise-grade, zero-download procedural 3D Augmented Reality teardown workstation that reconstructs, explodes, and inspects 139 curated real smartphones (2021–2026) in real-time with authentic component architectures, dynamic hardware matching, and AI touchless air gesture controls.**
 
 ---
 
 ## 🌟 Highlights & Key Innovations
 
-* **🚀 1,730+ Authentic Real Smartphone Database**: Instant procedural 3D generation across Apple, Samsung, Google Pixel, Xiaomi, OnePlus, Infinix, Realme, Vivo, Motorola, Nothing, and more.
+* **🚀 139 Curated Real Smartphone Database (2021–2026)**: Instant procedural 3D generation across Apple, Samsung, Google Pixel, Xiaomi, OnePlus, Infinix, Realme, Vivo, Motorola, and Oppo.
 * **⚡ 100% Zero-Download Procedural 3D Architecture**: Eliminates tens of gigabytes of heavy 3D GLB/GLTF assets. Every chassis, backpanel, camera lens, optical sensor, battery cell, and flex cable is procedurally synthesized via Three.js parametric geometries and procedural canvas shaders at 60 FPS.
 * **🔬 Dynamic Spec-Accurate Component Resolver**: Hardware components dynamically match each phone's real technical specifications:
   * **Displays**: *Super Retina XDR OLED* vs *Dynamic AMOLED 2X* vs *FHD+ 90Hz IPS LCD*.
@@ -82,14 +82,14 @@ augmented-reality-mobile/
 │   │   ├── common/
 │   │   │   ├── AudioEffects.js         # Procedural Web Audio API sound generator
 │   │   │   └── Navigation.jsx          # Glassmorphic top navigation bar
-│   │   └── phone-selection/            # 1,730+ phone search and filter matrix
+│   │   └── phone-selection/            # Curated phone search and filter matrix
 │   ├── data/
 │   │   ├── componentResolver.js        # Dynamic specification resolver (LCD/OLED/Graphite)
-│   │   └── phones.json                 # 1,730+ verified smartphone technical specifications
+│   │   └── phones.json                 # 139 verified smartphone technical specifications
 │   ├── pages/
 │   │   ├── ARAppPage.jsx               # Main WebAR inspection and teardown workstation
 │   │   ├── HomePage.jsx                # Interactive landing page and feature overview
-│   │   └── PhoneCatalogPage.jsx        # Searchable 1,730+ device directory
+│   │   └── PhoneCatalogPage.jsx        # Searchable 139-device directory
 │   ├── three/
 │   │   ├── phoneBuilder.js             # Parametric procedural 3D smartphone generator
 │   │   ├── PhoneViewer.jsx             # Three.js canvas container, raycaster & orbit controls

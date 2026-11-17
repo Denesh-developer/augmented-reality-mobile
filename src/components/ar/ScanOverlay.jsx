@@ -157,7 +157,7 @@ export const ScanOverlay = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-navy-950/80 hover:bg-navy-900 border border-white/10 text-slate-300 text-xs font-medium transition-colors"
           >
             <Search className="w-3.5 h-3.5 text-cyan-400" />
-            <span>All Models ({phones.length.toLocaleString()}+)</span>
+            <span>All Models ({phones.length})</span>
           </button>
 
           {onSkipToTeardown && (
