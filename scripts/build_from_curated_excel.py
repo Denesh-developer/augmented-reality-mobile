@@ -1,15 +1,16 @@
 import openpyxl
 import json
 import re
-
-excel_path = r'C:\Users\Administrator\.gemini\antigravity\brain\3d3d0aa9-6073-4215-a98c-97b5710a693e\.user_uploaded\media_1794890221598_3d8c010d.xlsx'
-wb = openpyxl.load_workbook(excel_path)
-ws = wb['Phones']
+import os
 
 def slugify(text):
     text = text.lower().strip()
-    text = re.sub(r'[^a-z0-9]+', '-', text)
+    text = re.sub(r'[^\w\s-]', '', text)
+    text = re.sub(r'[\s_-]+', '-', text)
     return text.strip('-')
+
+wb = openpyxl.load_workbook(r'd:\AR PROJECT\scripts\phones_specs_database.xlsx')
+ws = wb.active
 
 phones = []
 
@@ -40,6 +41,11 @@ for r in range(2, ws.max_row + 1):
     pid = f"{slugify(brand)}-{slugify(model)}-{year}"
     b_low = brand.lower()
     m_low = model.lower()
+
+    # Check if local image asset exists in public/backpanels
+    local_img = f"public/backpanels/{pid}.jpg"
+    if not back_url and os.path.exists(local_img):
+        back_url = f"/backpanels/{pid}.jpg"
 
     # 1. Authentic Geometry Dimensions
     w = 75.8
@@ -181,122 +187,142 @@ for r in range(2, ws.max_row + 1):
             w = 75.9
             h = 162.7
             t = 8.1
-        elif any(v in m_low for v in ['hot 30', 'hot 40', 'hot 50', 'note 30', 'note 40', 'note 50', 'smart 8', 'smart 7', 'smart 6', 'smart 10', 'zero 40']):
+        elif 'note 40' in m_low or 'note 30' in m_low:
             cam_layout = 'infinix_squircle_matrix'
-            color = '#d4af37' if 'note' in m_low else '#1e293b'
-            color_name = 'Sunset Gold / Starlit Black'
-            w = 76.8
-            h = 168.6
-            t = 7.8
-        else:
+            color = '#d4af37' if 'pro' in m_low else '#1e293b'
+            color_name = 'Titan Gold / Obsidian Black'
+            w = 74.5
+            h = 164.1
+            t = 7.75
+        elif 'zero' in m_low:
             cam_layout = 'infinix_triple_column'
             color = '#1e293b'
             color_name = 'Cosmic Black'
-            has_rear_fp = (year <= 2022)
-            w = 76.5
-            h = 168.0
-            t = 8.4
-
-    # POCO
-    elif b_low == 'poco':
-        back_mat = 'glass'
-        if 'x3' in m_low or 'x6' in m_low:
-            cam_layout = 'poco_yellow_banner'
-            color = '#f7b731'
-            color_name = 'POCO Yellow'
+            w = 75.0
+            h = 164.5
+            t = 7.9
         else:
-            cam_layout = 'poco_deco_rectangle'
-            color = '#111827'
-            color_name = 'Carbon Black'
-        w = 74.3
-        h = 160.5
-        t = 8.25
+            cam_layout = 'infinix_squircle_matrix'
+            color = '#1e293b'
+            color_name = 'Sleek Black'
+            w = 76.0
+            h = 165.0
+            t = 8.5
 
-    # Xiaomi & Redmi
+    # Xiaomi / Redmi
     elif b_low in ['xiaomi', 'redmi']:
         back_mat = 'glass'
-        if any(v in m_low for v in ['13', '14', '15', '13 pro', '14 pro']):
-            cam_layout = 'xiaomi_leica_square'
-            color = '#2d3436'
-            color_name = 'Midnight Black / Aurora Green'
-        else:
+        cr = 6.0
+        if 'note 10 pro' in m_low or 'note 11' in m_low or 'note 12' in m_low:
             cam_layout = 'redmi_deco_column'
             color = '#2d3436'
             color_name = 'Onyx Gray / Dark Nebula'
-        w = 75.3
-        h = 161.4
-        t = 8.0
+            w = 76.5
+            h = 164.5
+            t = 8.1
+        elif 'ultra' in m_low:
+            cam_layout = 'xiaomi_leica_square'
+            color = '#1e272e'
+            color_name = 'Black / White Ceramic'
+            w = 75.3
+            h = 161.4
+            t = 9.2
+        else:
+            cam_layout = 'xiaomi_leica_square'
+            color = '#2d3436'
+            color_name = 'Black / Green'
+            w = 75.0
+            h = 162.0
+            t = 8.2
+
+    # POCO
+    elif b_low == 'poco':
+        back_mat = 'polycarbonate'
+        cr = 6.5
+        if 'f' in m_low or 'x' in m_low:
+            cam_layout = 'poco_yellow_banner'
+            color = '#eab308'
+            color_name = 'POCO Yellow / Matrix Black'
+        else:
+            cam_layout = 'poco_deco_rectangle'
+            color = '#0f172a'
+            color_name = 'Power Black'
+        w = 75.5
+        h = 162.4
+        t = 8.3
 
     # Realme
     elif b_low == 'realme':
-        if '11 pro' in m_low or '12 pro' in m_low:
-            cam_layout = 'realme_luxury_dial'
-            back_mat = 'vegan_leather'
-            color = '#d2b48c'
-            color_name = 'Submarine Blue / Navigator Beige'
-        elif 'gt' in m_low:
+        back_mat = 'glass'
+        cr = 6.0
+        if 'gt' in m_low:
             cam_layout = 'realme_gt_racing'
-            color = '#e74c3c'
-            color_name = 'Racing Yellow / Speed Red'
+            color = '#f59e0b'
+            color_name = 'Racing Yellow / Speed White'
+        elif '11 pro' in m_low or '12 pro' in m_low:
+            cam_layout = 'realme_luxury_dial'
+            color = '#d97706'
+            color_name = 'Sunrise Beige / Submarine Blue'
         else:
-            cam_layout = 'redmi_deco_column'
-            color = '#1e272e'
-            color_name = 'Speed Silver'
+            cam_layout = 'realme_gt_racing'
+            color = '#1e293b'
+            color_name = 'Astral Black'
         w = 74.0
         h = 161.5
-        t = 8.75
+        t = 8.2
 
-    # Vivo & iQOO
+    # Vivo / iQOO
     elif b_low in ['vivo', 'iqoo']:
         back_mat = 'glass'
-        if 'x100' in m_low:
-            cam_layout = 'vivo_zeiss_sunburst'
-            color = '#0abde3'
-            color_name = 'Startrail Blue'
-        elif '12' in m_low or 'neo' in m_low or '9 pro' in m_low:
-            cam_layout = 'xiaomi_leica_square'
-            color = '#f5f6fa'
-            color_name = 'Legend White (BMW)'
-        else:
+        cr = 6.0
+        if 'v' in m_low:
             cam_layout = 'vivo_aura_light'
-            color = '#222f3e'
-            color_name = 'Aura Black / Fluorite Blue'
+            color = '#0284c7'
+            color_name = 'Andaman Blue / Noble Black'
+        elif 'x' in m_low:
+            cam_layout = 'vivo_zeiss_sunburst'
+            color = '#0f172a'
+            color_name = 'Asteroid Black / Sunset Orange'
+        else:
+            cam_layout = 'xiaomi_leica_square'
+            color = '#f5f6fa' if 'legend' in m_low else '#1e272e'
+            color_name = 'Legend White / Alpha Black'
         w = 75.2
-        h = 163.2
-        t = 8.1
+        h = 164.0
+        t = 7.9
 
     # Motorola
     elif b_low == 'motorola':
+        cr = 6.0
         cam_layout = 'motorola_batwing_pod'
-        back_mat = 'vegan_leather' if ('edge' in m_low or 'g84' in m_low) else 'glass'
-        color = '#be2edd' if 'g84' in m_low else '#576574'
-        color_name = 'Viva Magenta / Pantone Black'
-        w = 74.5
+        color = '#1e293b'
+        color_name = 'Interstellar Black'
+        w = 74.0
         h = 161.2
-        t = 8.2
+        t = 7.9
 
     # Oppo
     elif b_low == 'oppo':
+        cr = 6.0
         cam_layout = 'oppo_reno_glow'
         color = '#1e272e'
-        color_name = 'Glossy Black / Sunset Orange'
-        w = 74.0
-        h = 163.7
-        t = 8.5
+        color_name = 'Glow Emerald / Starlight Black'
+        w = 73.8
+        h = 162.3
+        t = 7.8
 
+    # Clean display name to avoid "Redmi Redmi"
     clean_model = model
-    if clean_model.lower().startswith(brand.lower() + " "):
+    if clean_model.lower().startswith(brand.lower()):
         clean_model = clean_model[len(brand):].strip()
-    disp_name = f"{brand} {clean_model}"
+    display_name = f"{brand} {clean_model}".strip()
 
     phone_obj = {
         "id": pid,
         "brand": brand,
         "model": clean_model,
-        "displayName": disp_name,
+        "displayName": display_name,
         "year": year,
-        "series": model.split()[0] if model else brand,
-        "segment": "Flagship" if any(k in m_low for k in ['ultra', 'pro max', 'pro+', 'fold', 'find x']) else ("Mid-Range" if any(k in m_low for k in ['pro', 'plus', 'gt', 'note', 'edge']) else "Budget"),
         "width": w,
         "height": h,
         "thickness": t,
