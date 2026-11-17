@@ -52,6 +52,27 @@ export const ScanOverlay = ({
     };
   }
 
+  // Single Suggested Mobile (Guaranteed 1 suggestion as user requested: "enaku oru phone suggest venum")
+  const resolvedSuggestedPhone = useMemo(() => {
+    if (suggestedPhone) return suggestedPhone;
+    if (detectedPhone) return detectedPhone;
+
+    if (detectedBrand) {
+      const brandMatch = phones.find(
+        (p) => p.brand.toLowerCase() === detectedBrand.toLowerCase()
+      );
+      if (brandMatch) return brandMatch;
+    }
+
+    // Default top curated flagship recommendation
+    return (
+      phones.find((p) => p.id.includes('redmi-note-10-pro')) ||
+      phones.find((p) => p.id.includes('s24-ultra')) ||
+      phones.find((p) => p.id.includes('hot-11s')) ||
+      phones[0]
+    );
+  }, [phones, suggestedPhone, detectedPhone, detectedBrand]);
+
   // Inline search filter
   const matchedPhones = useMemo(() => {
     const rawQ = inlineSearch.toLowerCase().trim();
@@ -258,10 +279,10 @@ export const ScanOverlay = ({
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-sm font-bold text-white font-heading">
-                    Now your phone is not in our database
+                    Your mobile is not in our database
                   </p>
-                  <p className="text-[11px] text-slate-400">
-                    We couldn't find "<span className="text-cyan-300 font-mono font-medium">{inlineSearch}</span>". We will update in future with your model!
+                  <p className="text-[11px] text-slate-300">
+                    We couldn't find "<span className="text-cyan-300 font-mono font-medium">{inlineSearch}</span>". In future, definitely we will upgrade our database!
                   </p>
                 </div>
                 <button
@@ -383,23 +404,23 @@ export const ScanOverlay = ({
                 <h4 className="text-sm sm:text-base font-bold font-heading text-white leading-snug">
                   I'm not able to identify this phone
                 </h4>
-                <p className="text-[11px] text-slate-400 leading-normal">
-                  Camera detected a device, but cannot verify the exact model. Please choose manually below.
+                <p className="text-[11px] text-slate-300 leading-normal">
+                  I'm an AI, so I'm not able to scan the mobile accurately. Otherwise, select manually to teardown your mobile.
                 </p>
               </div>
             </div>
 
-            {/* Primary Action Button: Choose Manually */}
+            {/* Primary Action Button: Select Manually to Teardown */}
             <button
               onClick={onOpenManualPicker}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-navy-950 bg-gradient-to-r from-cyan-400 to-cyan-300 shadow-cyan-glow hover:opacity-95 active:scale-[0.99] transition-all cursor-pointer"
             >
               <Search className="w-4 h-4" />
-              <span>Choose Model Manually ({phones.length} Models)</span>
+              <span>Select Manually to Teardown Mobile ({phones.length} Models)</span>
             </button>
 
-            {/* ONLY show suggested model IF genuinely deduced from camera clues! NEVER RANDOM! */}
-            {suggestedPhone && (
+            {/* Guaranteed 1 Suggested Model as user requested: "enaku oru phone suggest venum" */}
+            {resolvedSuggestedPhone && (
               <div className="pt-1 border-t border-white/10">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.07] border border-cyan-500/20 transition-all">
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -408,15 +429,15 @@ export const ScanOverlay = ({
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-white font-heading truncate">
-                        {suggestedPhone.displayName || `${suggestedPhone.brand} ${suggestedPhone.model}`}
+                        {resolvedSuggestedPhone.displayName || `${resolvedSuggestedPhone.brand} ${resolvedSuggestedPhone.model}`}
                       </p>
                       <p className="text-[10px] font-mono text-slate-400">
-                        {suggestedPhone.year} • {suggestedPhone.soc || suggestedPhone.chipset}
+                        {resolvedSuggestedPhone.year} • {resolvedSuggestedPhone.soc || resolvedSuggestedPhone.chipset}
                       </p>
                     </div>
                   </div>
                   <button
-                    onClick={() => onConfirm?.(suggestedPhone)}
+                    onClick={() => onConfirm?.(resolvedSuggestedPhone)}
                     className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-navy-950 bg-cyan-400 hover:bg-cyan-300 transition-colors flex-shrink-0 shadow-cyan-sm active:scale-95 cursor-pointer"
                   >
                     Select

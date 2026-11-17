@@ -162,14 +162,14 @@ export const ModelSelectModal = ({ isOpen, onClose, onSelectModel, currentPhoneI
                             </div>
                             <div className="space-y-1.5">
                                 <h4 className="text-lg font-bold text-white font-heading tracking-wide">
-                                    Now your phone is not in our database
+                                    Your mobile is not in our database
                                 </h4>
-                                <p className="text-xs text-slate-400 max-w-sm mx-auto leading-relaxed">
+                                <p className="text-xs text-slate-300 max-w-sm mx-auto leading-relaxed">
                                     {searchQuery ? (
                                         <>We couldn't find <span className="text-cyan-300 font-mono font-semibold">"{searchQuery}"</span> in our curated models.</>
                                     ) : (
                                         <>No matching models found in this category.</>
-                                    )} We will update in future with your phone!
+                                    )} In future, definitely we will upgrade our database!
                                 </p>
                             </div>
                             <div className="pt-2 flex items-center justify-center gap-3">
