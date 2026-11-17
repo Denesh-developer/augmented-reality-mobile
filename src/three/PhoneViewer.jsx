@@ -181,9 +181,9 @@ const PhoneViewerComponent = ({ config, explodeFactor = 0, selectedPartId = null
             if (autoRotate && !isPointerDownRef.current) {
                 targetRotationRef.current.y += 0.004;
             }
-            // Smooth rotation lerp - responsive & snappy
-            currentRotationRef.current.x += (targetRotationRef.current.x - currentRotationRef.current.x) * 0.18;
-            currentRotationRef.current.y += (targetRotationRef.current.y - currentRotationRef.current.y) * 0.18;
+            // Ultra-responsive rotation lerp (Instant 90 FPS responsiveness without sluggish lag)
+            currentRotationRef.current.x += (targetRotationRef.current.x - currentRotationRef.current.x) * 0.38;
+            currentRotationRef.current.y += (targetRotationRef.current.y - currentRotationRef.current.y) * 0.38;
             if (phoneModelRef.current) {
                 phoneModelRef.current.group.rotation.x = currentRotationRef.current.x;
                 phoneModelRef.current.group.rotation.y = currentRotationRef.current.y;

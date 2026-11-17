@@ -17,7 +17,7 @@ export const PartDetailCard = ({ part, phone, onClose }) => {
         }
     };
     const getDifficultyBadge = () => {
-        switch (part.repairDifficulty) {
+        switch (part?.repairDifficulty) {
             case 'easy':
                 return {
                     label: isTamil ? 'எளிதானது' : 'Easy',
@@ -31,6 +31,7 @@ export const PartDetailCard = ({ part, phone, onClose }) => {
                     dot: 'bg-amber-400',
                 };
             case 'hard':
+            default:
                 return {
                     label: isTamil ? 'கடினமானது' : 'Difficult',
                     color: 'bg-rose-950/80 text-rose-400 border-rose-500/40',
@@ -46,7 +47,7 @@ export const PartDetailCard = ({ part, phone, onClose }) => {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">
-                Layer {part.layer}
+                Layer {part?.layer || 1}
               </span>
               <div className={`flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${diff.color}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${diff.dot}`}/>
@@ -54,7 +55,7 @@ export const PartDetailCard = ({ part, phone, onClose }) => {
               </div>
             </div>
             <h3 className="text-base font-bold font-heading text-white leading-snug">
-              {isTamil ? part.name_ta : part.name}
+              {isTamil ? (part?.name_ta || part?.name || 'கூறு விவரங்கள்') : (part?.name || 'Component Details')}
             </h3>
           </div>
 
@@ -73,70 +74,97 @@ export const PartDetailCard = ({ part, phone, onClose }) => {
           </div>
         </div>
 
-        {/* Model Specific Exact Hardware Spec Badge */}
-        {phone && (<div className="bg-cyan-950/40 p-2.5 rounded-2xl border border-cyan-500/30 text-xs space-y-0.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-cyan-400 font-mono font-semibold uppercase">
-                {phone.brand} {phone.model} ({phone.year})
-              </span>
-              <span className="text-[9px] font-mono text-slate-400">
-                {phone.segment}
-              </span>
-            </div>
-            <p className="font-medium text-white text-[11px] leading-tight">
-              {part.id === 'battery' && `Capacity: ${phone.batteryCapacity} • Charging: ${phone.charging}`}
-              {part.id === 'motherboard' && `Chipset: ${phone.soc} • RAM: ${phone.ram} • Storage: ${phone.storage}`}
-              {part.id === 'camera_module' && `Optics: ${phone.cameraSpecs} (Front: ${phone.frontCamera})`}
-              {part.id === 'front_camera_module' && `Front Selfie: ${phone.frontCamera || '12MP Autofocus'} • Biometrics: ${phone.brand.toLowerCase() === 'apple' ? '3D Face ID VCSEL Array' : 'In-Display Optical / Punch-Hole'}`}
-              {part.id === 'screen' && `Display: ${phone.screenSize} • Resolution: ${phone.resolution}`}
-              {part.id === 'interconnect_flex' && `Bus: High-Speed Dual FPC Differential Bus • Fast Charge 5V-20V Power Rails`}
-              {part.id === 'vapor_chamber' && (
-                phone.brand.toLowerCase() === 'apple'
-                  ? 'Aerospace Multi-Layer Graphite & Titanium Thermal Dissipation Sheet'
-                  : (phone.segment === 'Budget' || phone.brand.toLowerCase() === 'infinix')
-                    ? 'Flexible Die-Cut Pyrolytic Carbon Graphite Thermal Sheet with Gold Grounding Foil Tabs'
-                    : 'Ultra-Thin Bionic Copper Vapor Chamber Plate with Capillary Liquid Grooves'
-              )}
-              {part.id === 'loudspeaker' && `Acoustic Box: 1115K Dual Stereo Resonator • Bass Reflex Port • Dolby Atmos Certified`}
-              {part.id === 'haptic_engine' && (
-                phone.brand.toLowerCase() === 'apple'
-                  ? 'Apple Taptic Engine: Oscillating Tungsten Spring Mass'
-                  : (phone.segment === 'Budget' || phone.brand.toLowerCase() === 'infinix')
-                    ? 'Coin-Type ERM (Eccentric Rotating Mass) Vibration Motor with Red/Blue Lead Wires'
-                    : 'X-Axis Ultra-Wideband Linear Resonant Vibration Actuator (LRA)'
-              )}
-              {part.id === 'frame' && `Chassis: ${phone.frameMaterial || 'Aluminum'} • Weight: ${phone.weight}`}
-              {part.id === 'wireless_coil' && (
-                phone.brand.toLowerCase() === 'apple'
-                  ? 'MagSafe 18 Neodymium Magnets Array + Qi Wireless Induction Coil'
-                  : (phone.charging?.toLowerCase().includes('wireless') || phone.charging?.toLowerCase().includes('qi') || phone.segment === 'Flagship')
-                    ? 'Qi Planar Wireless Induction & Reverse PowerShare Coil with Ferrite Shield'
-                    : 'Reinforced Polycarbonate Mid-Frame Stiffener & Graphite Antenna Shield (No Wireless Coil on Budget Series)'
-              )}
-              {part.id === 'back_panel' && (
-                phone.brand.toLowerCase() === 'infinix'
-                  ? `Material: ${phone.colorName || 'Sonic Cyan'} Glossy Polycarbonate with ${phone.backTextureStyle === 'wave_flow' ? 'Holographic Wave Flow Chevron Pattern' : phone.backTextureStyle === 'mecha_blueprint' ? 'Cyber Mecha Transparent Blueprint' : 'Dense Holographic Laser Pinstripes'} & Rear Capacitive Fingerprint Scanner`
-                  : phone.brand.toLowerCase() === 'apple'
-                    ? `Material: Precision Satin Frosted AG Glass with Centered Mirrored  Logo & Beveled Camera Island`
-                    : phone.brand.toLowerCase() === 'samsung'
-                      ? `Material: Satin Matte Glasstic with Minimalist Floating Individual Lens Rings (No Baseplate)`
-                      : phone.brand.toLowerCase() === 'google'
-                        ? `Material: Two-Tone Split Glass with Edge-to-Edge Aluminum Camera Visor Bar & Google "G" Emblem`
-                        : phone.brand.toLowerCase() === 'poco'
-                          ? `Material: Cyber High-Contrast Finish with Carbon Black Upper Racing Banner & POCO Typography`
-                          : phone.brand.toLowerCase() === 'realme'
-                            ? `Material: Luxury Embossed Vegan Leather with Golden Central Stitched Zipper Seam`
-                            : `Material: ${phone.backMaterial} Cover Glass with ${phone.brand} Custom Finish`
-              )}
-              {part.id === 'sub_board' && (
-                (phone.segment === 'Budget' || phone.brand.toLowerCase() === 'infinix' || (phone.segment === 'Mid-Range' && phone.brand.toLowerCase() !== 'apple' && phone.brand.toLowerCase() !== 'samsung' && phone.brand.toLowerCase() !== 'google'))
-                  ? `I/O Controller: USB-C Fast Ingress & 3.5mm Analog Audio Headphone Jack Module • OS: ${phone.osAtLaunch}`
-                  : `I/O Controller: High-Density USB-C & Beamforming MEMS Microphones (No 3.5mm Jack) • OS: ${phone.osAtLaunch}`
-              )}
-            </p>
-          </div>)}
+        {/* Model Specific Exact Hardware Spec Badge (100% undefined-safe) */}
+        {phone && (() => {
+          const brandName = phone.brand || '';
+          const modelName = phone.model || '';
+          const phoneTitle = phone.displayName || (
+            modelName.toLowerCase().startsWith(brandName.toLowerCase())
+              ? modelName
+              : `${brandName} ${modelName}`.trim()
+          );
+          const batteryStr = phone.battery || phone.batteryCapacity || '5000 mAh';
+          const chargingStr = phone.charging || 'Fast Charge Supported';
+          const socStr = phone.soc || phone.chipset || 'Octa-Core High-Speed Processor';
+          const ramStr = phone.ram || '8GB High-Speed RAM';
+          const storageStr = phone.storage ? ` • Storage: ${phone.storage}` : '';
+          const cameraStr = phone.rearCamera || phone.cameraSpecs || 'Multi-Lens Camera Array';
+          const frontStr = phone.frontCamera || '16MP HDR';
+          const screenStr = phone.screenSize || '6.67" Full HD+ Display';
+          const resStr = phone.resolution ? ` • Resolution: ${phone.resolution}` : '';
+          const refreshStr = phone.refreshRate ? ` • ${phone.refreshRate}Hz` : '';
+          const frameMat = phone.frameMaterial || 'Aviation-Grade Aluminum';
+          const dimsStr = (phone.width && phone.height) ? ` • Dims: ${phone.width} × ${phone.height} × ${phone.thickness || 8} mm` : '';
+          const backMat = phone.backMaterial || 'Gorilla Glass';
+          const osStr = phone.osAtLaunch || (brandName.toLowerCase() === 'apple' ? 'iOS' : 'Android');
+          const segmentStr = phone.segment || `${phone.year || 2023} Series`;
 
-        {/* Content sections */}
+          return (
+            <div className="bg-cyan-950/40 p-2.5 rounded-2xl border border-cyan-500/30 text-xs space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-cyan-400 font-mono font-semibold uppercase">
+                  {phoneTitle} ({phone.year || 2023})
+                </span>
+                <span className="text-[9px] font-mono text-slate-400">
+                  {segmentStr}
+                </span>
+              </div>
+              <p className="font-medium text-white text-[11px] leading-tight">
+                {part?.id === 'battery' && `Capacity: ${batteryStr} • Charging: ${chargingStr}`}
+                {part?.id === 'motherboard' && `Chipset: ${socStr} • RAM: ${ramStr}${storageStr}`}
+                {part?.id === 'camera_module' && `Optics: ${cameraStr}${frontStr ? ` (Front: ${frontStr})` : ''}`}
+                {part?.id === 'front_camera_module' && `Front Selfie: ${frontStr} • Biometrics: ${brandName.toLowerCase() === 'apple' ? '3D Face ID VCSEL Array' : 'In-Display Optical / Punch-Hole'}`}
+                {part?.id === 'screen' && `Display: ${screenStr}${resStr}${refreshStr}`}
+                {part?.id === 'interconnect_flex' && `Bus: High-Speed Dual FPC Differential Bus • Fast Charge 5V-20V Power Rails`}
+                {part?.id === 'vapor_chamber' && (
+                  brandName.toLowerCase() === 'apple'
+                    ? 'Aerospace Multi-Layer Graphite & Titanium Thermal Dissipation Sheet'
+                    : (segmentStr.includes('Budget') || brandName.toLowerCase().includes('infinix'))
+                      ? 'Flexible Die-Cut Pyrolytic Carbon Graphite Thermal Sheet with Gold Grounding Foil Tabs'
+                      : 'Ultra-Thin Bionic Copper Vapor Chamber Plate with Capillary Liquid Grooves'
+                )}
+                {part?.id === 'loudspeaker' && `Acoustic Box: 1115K Dual Stereo Resonator • Bass Reflex Port • Dolby Atmos Certified`}
+                {part?.id === 'haptic_engine' && (
+                  brandName.toLowerCase() === 'apple'
+                    ? 'Apple Taptic Engine: Oscillating Tungsten Spring Mass'
+                    : (segmentStr.includes('Budget') || brandName.toLowerCase().includes('infinix'))
+                      ? 'Coin-Type ERM (Eccentric Rotating Mass) Vibration Motor with Red/Blue Lead Wires'
+                      : 'X-Axis Ultra-Wideband Linear Resonant Vibration Actuator (LRA)'
+                )}
+                {part?.id === 'frame' && `Chassis: ${frameMat}${dimsStr}`}
+                {part?.id === 'wireless_coil' && (
+                  brandName.toLowerCase() === 'apple'
+                    ? 'MagSafe 18 Neodymium Magnets Array + Qi Wireless Induction Coil'
+                    : (chargingStr.toLowerCase().includes('wireless') || chargingStr.toLowerCase().includes('qi') || segmentStr.includes('Flagship'))
+                      ? 'Qi Planar Wireless Induction & Reverse PowerShare Coil with Ferrite Shield'
+                      : 'Reinforced Polycarbonate Mid-Frame Stiffener & Graphite Antenna Shield'
+                )}
+                {part?.id === 'back_panel' && (
+                  brandName.toLowerCase().includes('infinix')
+                    ? `Material: ${phone.colorName || 'Sonic Cyan'} Glossy Polycarbonate with Holographic Finish & Rear Fingerprint Scanner`
+                    : brandName.toLowerCase() === 'apple'
+                      ? `Material: Precision Satin Frosted AG Glass with Centered Mirrored  Logo & Beveled Camera Island`
+                      : brandName.toLowerCase() === 'samsung'
+                        ? `Material: Satin Matte Glasstic with Minimalist Floating Individual Lens Rings (No Baseplate)`
+                        : brandName.toLowerCase() === 'google'
+                          ? `Material: Two-Tone Split Glass with Edge-to-Edge Aluminum Camera Visor Bar & Google "G" Emblem`
+                          : brandName.toLowerCase() === 'poco'
+                            ? `Material: Cyber High-Contrast Finish with Carbon Black Upper Racing Banner & POCO Typography`
+                            : brandName.toLowerCase() === 'realme'
+                              ? `Material: Luxury Embossed Vegan Leather with Golden Central Stitched Zipper Seam`
+                              : `Material: ${backMat} Cover Glass with ${brandName || 'Custom'} Finish`
+                )}
+                {part?.id === 'sub_board' && (
+                  (segmentStr.includes('Budget') || brandName.toLowerCase().includes('infinix'))
+                    ? `I/O Controller: USB-C Fast Ingress & 3.5mm Analog Audio Headphone Jack Module • OS: ${osStr}`
+                    : `I/O Controller: High-Density USB-C & Beamforming MEMS Microphones • OS: ${osStr}`
+                )}
+              </p>
+            </div>
+          );
+        })()}
+
+        {/* Content sections (100% undefined-safe) */}
         <div className="space-y-3 text-xs leading-relaxed max-h-60 overflow-y-auto pr-1">
           {/* Function & Role */}
           <div className="space-y-1">
@@ -145,7 +173,7 @@ export const PartDetailCard = ({ part, phone, onClose }) => {
               {t('app.function')}
             </span>
             <p className="text-slate-300">
-              {isTamil ? part.function_ta : part.function}
+              {isTamil ? (part?.function_ta || part?.function || 'முதன்மை வன்பொருள் செயல்பாடு') : (part?.function || 'Core hardware operational component')}
             </p>
           </div>
 
@@ -156,7 +184,7 @@ export const PartDetailCard = ({ part, phone, onClose }) => {
               {t('app.specs')}
             </span>
             <p className="text-slate-400">
-              {isTamil ? part.specs_ta : part.specs}
+              {isTamil ? (part?.specs_ta || part?.specs || 'உயர்தர வன்பொருள் விவரக்குறிப்புகள்') : (part?.specs || 'High-grade precision engineered component')}
             </p>
           </div>
 
@@ -167,12 +195,12 @@ export const PartDetailCard = ({ part, phone, onClose }) => {
               {t('app.commonIssues')}
             </span>
             <p className="text-slate-400">
-              {isTamil ? part.commonIssues_ta : part.commonIssues}
+              {isTamil ? (part?.commonIssues_ta || part?.commonIssues || 'இயல்பான தேய்மானம் மற்றும் கேபிள் தளர்வு') : (part?.commonIssues || 'Mechanical wear, dust ingress, or ribbon flex fatigue')}
             </p>
           </div>
 
           {/* Tools required if any */}
-          {part.tools && (<div className="pt-2 border-t border-white/5 text-[11px] text-slate-500 flex items-start gap-1.5">
+          {part?.tools && (<div className="pt-2 border-t border-white/5 text-[11px] text-slate-500 flex items-start gap-1.5">
               <Wrench className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5"/>
               <span>Recommended Tools: {part.tools}</span>
             </div>)}

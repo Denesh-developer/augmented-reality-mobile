@@ -91,7 +91,7 @@ const HandOverlayComponent = ({ landmarks = [], width, height, isTwoFingerJoin =
         }
     };
     useImperativeHandle(ref, () => ({
-        draw: ({ landmarks: hands, isTwoFingerJoin: isPinch, isPointing: isPoint = false, cursorPoint: cursorPt = null, isRotationLocked = false, hoveredPartName = '', actionName: action }) => {
+        draw: ({ landmarks: hands, isTwoFingerJoin: isPinch, isTwoFingerRotating = false, isPointing: isPoint = false, cursorPoint: cursorPt = null, isRotationLocked = false, hoveredPartName = '', actionName: action }) => {
             renderToCanvas(hands, isPinch, isPinch ? (cursorPt || pinchPoint) : null, isPoint, cursorPt);
             if (badgeDivRef.current) {
                 let text = '';
@@ -99,44 +99,54 @@ const HandOverlayComponent = ({ landmarks = [], width, height, isTwoFingerJoin =
                 let dot = '';
                 if (isRotationLocked) {
                     if (isPinch) {
-                        text = '✨ 2-Finger Touch: Inspecting Part • Double-Touch to Assemble';
+                        text = '✨ Two Fingers Joined: Inspecting Component';
                         color = 'border-cyan-400 text-cyan-300 bg-cyan-950/85';
                         dot = 'bg-cyan-400 animate-ping';
                     }
                     else if (hoveredPartName) {
-                        text = `🎯 Aiming: ${hoveredPartName} • Pinch or Tap to Inspect`;
+                        text = `🎯 Aiming: ${hoveredPartName} • Join Fingers to Inspect`;
                         color = 'border-cyan-400 text-cyan-300 bg-cyan-950/85';
                         dot = 'bg-cyan-400 animate-pulse';
                     }
                     else {
-                        text = '🔒 3D Locked (Steady Inspection) • Point & Pinch to Select Parts';
+                        text = '🔒 3D Locked (Steady Inspection) • Join Fingers on Component';
                         color = 'border-amber-400 text-amber-300 bg-amber-950/85';
                         dot = 'bg-amber-400';
                     }
                 }
                 else {
                     if (isPinch) {
-                        text = '✨ 2-Finger Touch: Inspecting Part • Double-Touch to Assemble';
+                        text = '✨ Two Fingers Joined: Inspecting Component';
                         color = 'border-cyan-400 text-cyan-300 bg-cyan-950/85';
                         dot = 'bg-cyan-400 animate-ping';
                     }
-                    else if (isPoint) {
-                        text = '🎯 Pointing: Aiming at component (Rotation auto-paused)';
-                        color = 'border-cyan-400 text-cyan-300 bg-cyan-950/85';
-                        dot = 'bg-cyan-400 animate-pulse';
-                    }
                     else if (action === 'assemble') {
-                        text = 'Double-Touch Detected: Assembling All Layers';
+                        text = '✊ Palm Closed: Assembling All Layers';
                         color = 'border-emerald-400 text-emerald-300 bg-emerald-950/85';
                         dot = 'bg-emerald-400 animate-pulse';
                     }
                     else if (action === 'disassemble') {
-                        text = 'Fingers Separated: Disassembling All Layers';
+                        text = '👐 Two Fingers Opened: Disassembling All Layers';
                         color = 'border-purple-400 text-purple-300 bg-purple-950/85';
                         dot = 'bg-purple-400 animate-pulse';
                     }
+                    else if (isTwoFingerRotating) {
+                        text = '🔄 Two Fingers Move: Rotating 3D Phone (90 FPS)';
+                        color = 'border-cyan-400 text-cyan-300 bg-cyan-950/85';
+                        dot = 'bg-cyan-400 animate-pulse';
+                    }
+                    else if (hoveredPartName) {
+                        text = `🎯 Aiming: ${hoveredPartName} • Join Fingers to Inspect`;
+                        color = 'border-cyan-400 text-cyan-300 bg-cyan-950/85';
+                        dot = 'bg-cyan-400 animate-pulse';
+                    }
+                    else if (isPoint) {
+                        text = '🎯 Pointing: Aiming at component';
+                        color = 'border-cyan-400 text-cyan-300 bg-cyan-950/85';
+                        dot = 'bg-cyan-400 animate-pulse';
+                    }
                     else if (hands && hands.length > 0) {
-                        text = '🔄 Rotating 3D Phone • Click "Lock 3D" to Select Parts';
+                        text = '🤞 Two Fingers Move: Rotate 3D • 👌 Join Fingers: Inspect';
                         color = 'border-blue-400 text-blue-300 bg-navy-950/85';
                         dot = 'bg-blue-400';
                     }

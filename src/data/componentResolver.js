@@ -40,8 +40,8 @@ export function resolvePartForPhone(part, phone) {
       resolved.shortName_ta = 'AMOLED திரை';
       resolved.name = 'Super AMOLED Display Assembly & In-Cell Digitizer';
       resolved.name_ta = 'Super AMOLED தொடுதிரை பலகை';
-      resolved.specs = `${phone.screenSize} • ${phone.resolution} • ${phone.refreshRate}Hz Dynamic AMOLED • In-Display Fingerprint Optical Window`;
-      resolved.specs_ta = `${phone.screenSize} • ${phone.resolution} • ${phone.refreshRate}Hz டைனமிக் AMOLED திரை`;
+      resolved.specs = `${phone.screenSize || '6.67" AMOLED'} • ${phone.resolution || '1080x2400'} • ${phone.refreshRate || 120}Hz Dynamic AMOLED • In-Display Fingerprint Optical Window`;
+      resolved.specs_ta = `${phone.screenSize || '6.67" AMOLED'} • ${phone.resolution || '1080x2400'} • ${phone.refreshRate || 120}Hz டைனமிக் AMOLED திரை`;
       resolved.function = 'Self-illuminating organic LED display offering infinite contrast ratio, 120Hz refresh, and integrated optical fingerprint sensor.';
       resolved.function_ta = 'ஒளிரும் ஆர்கானிக் LED திரை, 120Hz வேகம் மற்றும் திரைக்கு அடியில் உள்ள கைரேகை சென்சார்.';
       resolved.commonIssues = 'AMOLED organic purple bleed, vertical green line flex defects, icon burn-in.';
@@ -51,8 +51,8 @@ export function resolvePartForPhone(part, phone) {
       resolved.shortName_ta = 'OLED திரை';
       resolved.name = 'Super Retina XDR OLED Display Assembly';
       resolved.name_ta = 'OLED தொடுதிரை பலகை';
-      resolved.specs = `${phone.screenSize} • ${phone.resolution} • Ceramic Shield Glass • ProMotion Dynamic Refresh`;
-      resolved.specs_ta = `${phone.screenSize} • ${phone.resolution} • செராமிக் ஷீல்டு கண்ணாடி`;
+      resolved.specs = `${phone.screenSize || '6.7" OLED'} • ${phone.resolution || '1179x2556'} • Ceramic Shield Glass • ProMotion Dynamic Refresh`;
+      resolved.specs_ta = `${phone.screenSize || '6.7" OLED'} • ${phone.resolution || '1179x2556'} • செராமிக் ஷீல்டு கண்ணாடி`;
     }
   }
 
@@ -184,22 +184,31 @@ export function resolvePartForPhone(part, phone) {
   else if (part.id === 'frame') {
     const isTitanium = (phone.frameMaterial || '').toLowerCase().includes('titanium');
     resolved.name = isTitanium ? 'Aerospace Grade 5 Titanium Mid-Frame' : 'Aircraft-Grade Aluminum Chassis Frame';
-    resolved.specs = `${phone.frameMaterial || 'Aluminum'} structural frame • Width: ${phone.width}mm • Thickness: ${phone.thickness}mm • Weight: ${phone.weight || '190g'}`;
+    const dimsStr = (phone.width && phone.height) ? ` • Dimensions: ${phone.width} × ${phone.height} × ${phone.thickness || 8} mm` : '';
+    const weightStr = phone.weight ? ` • Weight: ${phone.weight}` : '';
+    resolved.specs = `${phone.frameMaterial || 'Aluminum'} structural frame${dimsStr}${weightStr}`;
   }
 
   // 7. BATTERY
   else if (part.id === 'battery') {
-    resolved.specs = `Capacity: ${phone.batteryCapacity || '5000 mAh'} • Charging: ${phone.charging || '18W Fast Charge'} • Chem: Li-Ion Polymer`;
+    const batteryCap = phone.battery || phone.batteryCapacity || '5000 mAh';
+    const chargingSpd = phone.charging || '18W Fast Charge';
+    resolved.specs = `Capacity: ${batteryCap} • Charging: ${chargingSpd} • Chem: Li-Ion Polymer`;
   }
 
   // 8. MOTHERBOARD
   else if (part.id === 'motherboard') {
-    resolved.specs = `Chipset: ${phone.soc || phone.chipset} • RAM: ${phone.ram} • Storage: ${phone.storage} • OS: ${phone.osAtLaunch || 'Android'}`;
+    const socStr = phone.soc || phone.chipset || 'Octa-Core High-Speed Processor';
+    const ramStr = phone.ram || '8GB High-Speed RAM';
+    const storageStr = phone.storage ? ` • Storage: ${phone.storage}` : '';
+    const osStr = phone.osAtLaunch || ((phone.brand || '').toLowerCase() === 'apple' ? 'iOS' : 'Android');
+    resolved.specs = `Chipset: ${socStr} • RAM: ${ramStr}${storageStr} • OS: ${osStr}`;
   }
 
   // 9. REAR CAMERA MODULE
   else if (part.id === 'camera_module') {
-    resolved.specs = `Optics: ${phone.cameraSpecs || phone.rearCamera} • Dual/Triple Lens Array • LED Flash`;
+    const opticsStr = phone.rearCamera || phone.cameraSpecs || 'Multi-Lens Camera Array';
+    resolved.specs = `Optics: ${opticsStr} • Dual/Triple Lens Array • LED Flash`;
   }
 
   return resolved;

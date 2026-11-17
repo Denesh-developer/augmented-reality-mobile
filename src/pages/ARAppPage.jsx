@@ -63,6 +63,7 @@ export const ARAppPage = () => {
     const animFrameRef = useRef(null);
     const handEngineRef = useRef(new HandGestureEngine());
     const isOCRRunningRef = useRef(false);
+    const isHandDetectingRef = useRef(false);
     const lastDetectionTimeRef = useRef(0);
     const lastHandTrackTimeRef = useRef(0);
     const containerRef = useRef(null);
@@ -178,10 +179,11 @@ export const ARAppPage = () => {
                         }
                     }
                 }
-                // B. Teardown Phase: Hand Tracking (Throttled to ~30 FPS / 33ms)
+                // B. Teardown Phase: Hand Tracking (Ultra-Smooth 90 FPS Zero-Lag Tracking)
                 if (phase === 'teardown') {
-                    if (timestamp - lastHandTrackTimeRef.current > 33) {
+                    if (!isHandDetectingRef.current && (timestamp - lastHandTrackTimeRef.current >= 10)) {
                         lastHandTrackTimeRef.current = timestamp;
+                        isHandDetectingRef.current = true;
                         try {
                             const landmarker = await getHandLandmarker();
                             const results = landmarker.detectForVideo(video, timestamp);
@@ -203,6 +205,7 @@ export const ARAppPage = () => {
                                     handOverlayRef.current?.draw({
                                         landmarks: hands,
                                         isTwoFingerJoin: processed.isTwoFingerJoin,
+                                        isTwoFingerRotating: processed.isTwoFingerRotating,
                                         isPointing: processed.isPointing,
                                         cursorPoint: processed.cursorPoint,
                                         isRotationLocked: isRotationLockedRef.current,
@@ -211,18 +214,14 @@ export const ARAppPage = () => {
                                     });
                                 }
 
-                                // 2. Direct 3D Rotation via Hand Movement (0 React re-renders)
-                                // ROTATION IS BLOCKED when:
-                                // - User enabled Rotation Lock toggle, OR
-                                // - User is currently pointing at a part, OR
-                                // - User is currently pinching (inspecting)
-                                if (!isRotationLockedRef.current && !processed.isTwoFingerJoin && !processed.isPointing) {
+                                // 2. Direct 3D Rotation via Two Fingers Crossed/Extended Movement (0 React re-renders, 90 FPS responsiveness)
+                                if (!isRotationLockedRef.current && !processed.isTwoFingerJoin) {
                                     if (processed.deltaHandRotation.x !== 0 || processed.deltaHandRotation.y !== 0) {
                                         phoneViewerRef.current?.applyRotationDelta(processed.deltaHandRotation.x, processed.deltaHandRotation.y);
                                     }
                                 }
 
-                                // 3. Two-Finger Join (Pinch) -> Raycast mesh & show details card
+                                // 3. Two-Finger Join (Pinch) held over component -> Select & Open Details Card
                                 if (processed.isTwoFingerJoin && processed.cursorPoint) {
                                     const hitId = phoneViewerRef.current?.raycastAtPoint(processed.cursorPoint.x, processed.cursorPoint.y);
                                     if (hitId && hitId !== lastSelectedPartRef.current) {
@@ -230,7 +229,8 @@ export const ARAppPage = () => {
                                         setSelectedPartId(hitId);
                                     }
                                 }
-                                // 4. Palm Closed (Assemble)
+
+                                // 4. Palm Closed / Fist -> Assemble All!
                                 if (processed.handAction === 'assemble' && lastActionRef.current !== 'assemble') {
                                     lastActionRef.current = 'assemble';
                                     gsap.killTweensOf(explodeFactorObjRef.current);
@@ -243,13 +243,13 @@ export const ARAppPage = () => {
                                         },
                                     });
                                 }
-                                // 5. Palm Opened (Disassemble)
+                                // 5. Two Fingers Opened / Separated -> Disassemble / Explode All!
                                 else if (processed.handAction === 'disassemble' && lastActionRef.current !== 'disassemble') {
                                     lastActionRef.current = 'disassemble';
                                     gsap.killTweensOf(explodeFactorObjRef.current);
                                     gsap.to(explodeFactorObjRef.current, {
-                                        val: 0.85,
-                                        duration: 0.5,
+                                        val: 0.95,
+                                        duration: 0.45,
                                         ease: 'power2.out',
                                         onUpdate: () => {
                                             setExplodeFactor(explodeFactorObjRef.current.val);
@@ -266,6 +266,9 @@ export const ARAppPage = () => {
                         }
                         catch {
                             // Frame skipped safely
+                        }
+                        finally {
+                            isHandDetectingRef.current = false;
                         }
                     }
                 }
