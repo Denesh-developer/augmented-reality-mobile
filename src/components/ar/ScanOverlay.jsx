@@ -12,6 +12,7 @@ import {
   Smartphone,
   HelpCircle,
   Zap,
+  RotateCcw,
 } from 'lucide-react';
 import phonesData from '../../data/phones.json';
 
