@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Scan,
@@ -52,58 +52,29 @@ export const ScanOverlay = ({
     };
   }
 
-  const [shuffleSeed, setShuffleSeed] = useState(0);
+  // Automatic per-scan random 3 suggestions (Automatically picks on each scan without manual user shuffle)
+  const [suggested3Phones, setSuggested3Phones] = useState(() => {
+    const shuffled = [...phones].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 3);
+  });
 
-  // 3 Suggested Mobile Phones (as user requested: "random ah oru 3 mobile phone show panra mari ithula unga mobile irutha choose otherwise select manually")
-  const suggested3Phones = useMemo(() => {
-    // If a brand was detected by AI, prioritize models of that brand
-    if (detectedBrand) {
-      const brandPhones = phones.filter(
-        (p) => p.brand.toLowerCase() === detectedBrand.toLowerCase()
-      );
-      if (brandPhones.length >= 3) {
-        const start = (shuffleSeed * 3) % brandPhones.length;
-        const res = [];
-        for (let i = 0; i < 3; i++) {
-          res.push(brandPhones[(start + i) % brandPhones.length]);
-        }
-        return res;
-      }
-      if (brandPhones.length > 0) {
-        const otherPhones = phones.filter(
-          (p) => p.brand.toLowerCase() !== detectedBrand.toLowerCase()
+  // Automatically refresh random 3 models every time a phone is scanned in frame
+  useEffect(() => {
+    if (detectedBBox || hasScannedPhone) {
+      if (detectedBrand) {
+        const brandPhones = phones.filter(
+          (p) => p.brand.toLowerCase() === detectedBrand.toLowerCase()
         );
-        return [...brandPhones, ...otherPhones.slice(0, 3 - brandPhones.length)];
+        if (brandPhones.length >= 3) {
+          const shuffled = [...brandPhones].sort(() => 0.5 - Math.random());
+          setSuggested3Phones(shuffled.slice(0, 3));
+          return;
+        }
       }
+      const shuffled = [...phones].sort(() => 0.5 - Math.random());
+      setSuggested3Phones(shuffled.slice(0, 3));
     }
-
-    // Popular diverse models across key brands (Infinix, Samsung, Apple, Redmi, OnePlus, POCO)
-    const curatedPicks = [
-      'infinix-hot-11s-2021',
-      'samsung-galaxy-s24-ultra-2024',
-      'apple-iphone-15-pro-max-2023',
-      'infinix-hot-12-play-2022',
-      'redmi-redmi-note-10-pro-2021',
-      'oneplus-oneplus-12-2024',
-      'poco-poco-x6-pro-2024',
-      'google-pixel-8-pro-2023',
-      'infinix-note-40-pro-5g-2024',
-      'vivo-v40-pro-2024',
-      'realme-gt-6-2024',
-      'motorola-motorola-edge-50-ultra-2024',
-    ];
-
-    const pool = curatedPicks
-      .map((id) => phones.find((p) => p.id === id))
-      .filter(Boolean);
-
-    const start = (shuffleSeed * 3) % pool.length;
-    const res = [];
-    for (let i = 0; i < 3; i++) {
-      res.push(pool[(start + i) % pool.length]);
-    }
-    return res;
-  }, [phones, detectedBrand, shuffleSeed]);
+  }, [detectedBBox, hasScannedPhone, detectedBrand, phones]);
 
   // Inline search filter
   const matchedPhones = useMemo(() => {
@@ -442,20 +413,16 @@ export const ScanOverlay = ({
               </div>
             </div>
 
-            {/* 3 Suggested Mobile Phones (as user requested: "random ah oru 3 mobile phone show panra mari ithula unga mobile irutha choose otherwise select manually") */}
+            {/* 3 Suggested Mobile Phones (Automatically randomizes per scan as user requested) */}
             <div className="pt-1 border-t border-white/10 space-y-1.5">
               <div className="flex items-center justify-between text-xs px-0.5">
                 <span className="font-mono text-cyan-300 font-semibold flex items-center gap-1.5 text-[11px]">
                   <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                   <span>If your mobile is here, choose it:</span>
                 </span>
-                <button
-                  onClick={() => setShuffleSeed((s) => s + 1)}
-                  className="text-[10px] text-slate-400 hover:text-cyan-300 flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
-                  title="Show 3 other suggestions"
-                >
-                  <span>Shuffle 🔀</span>
-                </button>
+                <span className="text-[10px] font-mono text-slate-400">
+                  AI Auto-Suggested
+                </span>
               </div>
 
               {/* 3 Compact Suggestion Rows */}
