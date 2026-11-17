@@ -335,7 +335,7 @@ const PhoneViewerComponent = ({ config, explodeFactor = 0, selectedPartId = null
                             }
                         }
                         else if (hasSelection) {
-                            gsap.to(mat, { opacity: 0.25, duration: 0.25 });
+                            gsap.to(mat, { opacity: 0.88, duration: 0.25 });
                             if ('emissive' in mat) {
                                 mat.emissive = new THREE.Color(0x000000);
                                 mat.emissiveIntensity = 0;

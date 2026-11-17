@@ -677,19 +677,19 @@ export function createPhone(config) {
 
   const backDecalMat = new THREE.MeshBasicMaterial({
     map: backTex,
-    transparent: true,
-    opacity: 0.99,
+    transparent: false,
     side: THREE.DoubleSide,
+    depthTest: true,
     depthWrite: true,
   });
   disposables.push(backDecalMat);
   const backDecal = new THREE.Mesh(backDecalGeo, backDecalMat);
   backDecal.rotation.y = Math.PI; // Face outwards to the back
-  backDecal.position.set(0, 0, -t / 2 - 0.043);
+  backDecal.position.set(0, 0, -t / 2 - 0.052);
   backGroup.add(backDecal);
 
   // Direct Backpanel Image URL Loader (from Excel Column K or JSON)
-  if (config.backPanelImageUrl && typeof config.backPanelImageUrl === 'string' && config.backPanelImageUrl.trim().startsWith('http')) {
+  if (config.backPanelImageUrl && typeof config.backPanelImageUrl === 'string' && config.backPanelImageUrl.trim().length > 3) {
     const texLoader = new THREE.TextureLoader();
     texLoader.crossOrigin = 'anonymous';
     texLoader.load(
