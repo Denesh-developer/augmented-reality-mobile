@@ -688,6 +688,28 @@ export function createPhone(config) {
   backDecal.position.set(0, 0, -t / 2 - 0.043);
   backGroup.add(backDecal);
 
+  // Direct Backpanel Image URL Loader (from Excel Column K or JSON)
+  if (config.backPanelImageUrl && typeof config.backPanelImageUrl === 'string' && config.backPanelImageUrl.trim().startsWith('http')) {
+    const texLoader = new THREE.TextureLoader();
+    texLoader.crossOrigin = 'anonymous';
+    texLoader.load(
+      config.backPanelImageUrl.trim(),
+      (customTex) => {
+        customTex.generateMipmaps = true;
+        customTex.minFilter = THREE.LinearMipmapLinearFilter;
+        customTex.center.set(0.5, 0.5);
+        customTex.repeat.set(-1, 1);
+        backDecalMat.map = customTex;
+        backDecalMat.needsUpdate = true;
+        disposables.push(customTex);
+      },
+      undefined,
+      (err) => {
+        console.warn('Could not load custom back panel image URL, fallback to procedural:', err);
+      }
+    );
+  }
+
   // Physical 3D Chamfered Rear Fingerprint Sensor (Hot 11S offset squircle / Hot 12 Play center circular / Budget models)
   const hasRearFingerprint = Boolean(
     config.hasRearFingerprint !== undefined
