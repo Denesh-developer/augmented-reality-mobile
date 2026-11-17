@@ -241,12 +241,15 @@ export async function recognizePhoneFromImage(imageCanvas) {
     }
 
     const totalConfidence = Math.min(98, highestScore);
+    const isConfidentMatch = totalConfidence >= 75;
+    const isPlausibleSuggestion = Boolean(bestMatch && (totalConfidence >= 35 || detectedBrand));
 
     return {
-      matchedPhone: totalConfidence >= 75 ? bestMatch : null,
-      detectedBrand: detectedBrand || (bestMatch && totalConfidence >= 50 ? bestMatch.brand : null),
+      matchedPhone: isConfidentMatch ? bestMatch : null,
+      suggestedPhone: isPlausibleSuggestion ? bestMatch : null,
+      detectedBrand: detectedBrand || (bestMatch && totalConfidence >= 35 ? bestMatch.brand : null),
       detectedText: textJoined,
-      confidence: totalConfidence >= 75 ? totalConfidence : (detectedBrand ? brandConfidence : 0),
+      confidence: isConfidentMatch ? totalConfidence : (detectedBrand ? brandConfidence : totalConfidence),
     };
   } catch (err) {
     console.warn('Enhanced OCR Recognition error:', err);

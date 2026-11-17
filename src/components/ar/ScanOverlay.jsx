@@ -18,9 +18,12 @@ import phonesData from '../../data/phones.json';
 export const ScanOverlay = ({
   isScanning,
   detectedPhone,
+  suggestedPhone,
   detectedBrand,
   confidence,
   detectedBBox,
+  isAnalyzing = false,
+  hasScannedPhone = false,
   videoSize,
   onConfirm,
   onWrong,
@@ -49,25 +52,6 @@ export const ScanOverlay = ({
     };
   }
 
-  // 1 Single Suggested Mobile (Strictly 1 as user requested)
-  const singleSuggestion = useMemo(() => {
-    if (detectedPhone) return detectedPhone;
-
-    if (detectedBrand) {
-      const brandMatch = phones.find(
-        (p) => p.brand.toLowerCase() === detectedBrand.toLowerCase()
-      );
-      if (brandMatch) return brandMatch;
-    }
-
-    // Default iconic suggestion
-    const defaultIconic =
-      phones.find((p) => p.id.includes('redmi-note-10-pro')) ||
-      phones.find((p) => p.id.includes('s24-ultra')) ||
-      phones[0];
-    return defaultIconic;
-  }, [phones, detectedPhone, detectedBrand]);
-
   // Inline search filter
   const matchedPhones = useMemo(() => {
     const rawQ = inlineSearch.toLowerCase().trim();
@@ -84,7 +68,10 @@ export const ScanOverlay = ({
     });
   }, [phones, inlineSearch]);
 
-  const isConfirmedMatch = Boolean(detectedPhone && confidence >= 70);
+  const hasPhoneInFrame = Boolean(detectedBBox);
+  const hasAttemptedScan = Boolean(hasScannedPhone || hasPhoneInFrame);
+  const isConfirmedMatch = Boolean(detectedPhone && confidence >= 75);
+  const isSearchActive = inlineSearch.trim().length > 0;
 
   return (
     <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between p-4 sm:p-6 overflow-hidden">
@@ -96,8 +83,10 @@ export const ScanOverlay = ({
           <span className="font-mono text-cyan-300 font-semibold">
             {isConfirmedMatch
               ? `🎯 IDENTIFIED: ${detectedPhone.brand} ${detectedPhone.model}`
-              : trackBoxStyle
-              ? `📱 Physical Phone in Frame`
+              : isAnalyzing
+              ? `🔍 Analyzing Hardware...`
+              : hasPhoneInFrame
+              ? `📱 Physical Phone Tracked`
               : t('app.scanning')}
           </span>
           {confidence > 0 && isConfirmedMatch && (
@@ -140,7 +129,7 @@ export const ScanOverlay = ({
         </div>
       </div>
 
-      {/* 2. Real-time AR Phone Anchor Tracking Box */}
+      {/* 2. Real-time AR Phone Anchor Tracking Box (Shows only when phone is physically detected in frame) */}
       {trackBoxStyle && (
         <div
           style={trackBoxStyle}
@@ -158,6 +147,8 @@ export const ScanOverlay = ({
             <span className="font-bold">
               {isConfirmedMatch
                 ? `🎯 ${detectedPhone.displayName || detectedPhone.model}`
+                : isAnalyzing
+                ? `🔍 Analyzing device...`
                 : '📱 Smartphone Tracked'}
             </span>
           </div>
@@ -218,7 +209,7 @@ export const ScanOverlay = ({
                 ALIGN PHONE IN FRAME
               </p>
               <p className="text-[10px] text-slate-300">
-                Hold phone back to camera or choose model manually below
+                Hold phone back to camera to scan
               </p>
             </div>
           ) : (
@@ -235,10 +226,10 @@ export const ScanOverlay = ({
         </div>
       )}
 
-      {/* 4. Bottom Accurate Identification Deck */}
+      {/* 4. Bottom Identification Deck */}
       <div className="max-w-xl w-full mx-auto pointer-events-auto space-y-2.5">
-        {/* Inline Search Active Results */}
-        {inlineSearch.trim().length > 0 ? (
+        {/* A. Inline Search Active Results */}
+        {isSearchActive ? (
           <div className="glass-card p-4 rounded-3xl border border-white/10 shadow-2xl space-y-3 animate-in fade-in duration-200">
             {/* Search Input Bar */}
             <div className="relative">
@@ -259,7 +250,7 @@ export const ScanOverlay = ({
               </button>
             </div>
 
-            {/* Matched results or 0 results empty state */}
+            {/* Empty State vs Matching Results */}
             {matchedPhones.length === 0 ? (
               <div className="p-4 rounded-2xl bg-navy-950/90 border border-cyan-500/20 text-center space-y-2">
                 <div className="w-10 h-10 mx-auto rounded-full bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
@@ -309,8 +300,36 @@ export const ScanOverlay = ({
               </div>
             )}
           </div>
+        ) : !hasAttemptedScan ? (
+          /* B. INITIAL STATE: User has NOT shown a phone yet! Keep view completely clean */
+          <div className="max-w-md w-full mx-auto pointer-events-auto text-center space-y-2 animate-in fade-in duration-300">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-navy-950/80 backdrop-blur-md border border-cyan-500/20 text-xs text-slate-300 shadow-lg">
+              <Scan className="w-4 h-4 text-cyan-400 animate-pulse" />
+              <span>Hold your phone's back panel to camera to scan</span>
+            </div>
+            <div className="flex items-center justify-center gap-3">
+              <button
+                onClick={onOpenManualPicker}
+                className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold underline flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>Or choose from all {phones.length} models</span>
+              </button>
+            </div>
+          </div>
+        ) : isAnalyzing && !isConfirmedMatch ? (
+          /* C. ACTIVE SCANNING STATE: Phone is currently being analyzed by AI */
+          <div className="glass-card p-4 rounded-3xl border border-cyan-400/40 shadow-cyan-glow text-center space-y-2 animate-pulse">
+            <div className="flex items-center justify-center gap-2 text-cyan-300 text-xs font-mono font-bold tracking-wide">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+              <span>SCANNING HARDWARE... ANALYZING MODEL SIGNATURES</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Hold steady while AI reads camera layout, brand typography & specs
+            </p>
+          </div>
         ) : isConfirmedMatch ? (
-          /* Confirmed Detection Card (High Confidence) */
+          /* D. CONFIRMED HIGH-CONFIDENCE MATCH CARD */
           <div className="glass-card p-4 rounded-2xl border border-cyan-500/40 shadow-2xl space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between">
               <div>
@@ -349,7 +368,7 @@ export const ScanOverlay = ({
             </div>
           </div>
         ) : (
-          /* Not Able to Identify Card (Honest, Professional, 1 Suggestion Only) */
+          /* E. SCANNED BUT UNCONFIRMED CARD (Honest prompt, genuine suggestion only if identified) */
           <div className="glass-card p-4 rounded-3xl border border-white/10 shadow-2xl space-y-3 animate-in fade-in duration-300">
             {/* Header: "I'm not able to identify this phone" */}
             <div className="flex items-start gap-3">
@@ -359,13 +378,13 @@ export const ScanOverlay = ({
               <div className="space-y-0.5 min-w-0">
                 <div className="inline-flex items-center gap-1.5 text-[10px] font-mono text-amber-300 uppercase tracking-wider">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  <span>Scanner Status</span>
+                  <span>Scanner Result</span>
                 </div>
                 <h4 className="text-sm sm:text-base font-bold font-heading text-white leading-snug">
                   I'm not able to identify this phone
                 </h4>
                 <p className="text-[11px] text-slate-400 leading-normal">
-                  Camera detected a device, but cannot confirm the exact model. Please choose manually below.
+                  Camera detected a device, but cannot verify the exact model. Please choose manually below.
                 </p>
               </div>
             </div>
@@ -379,8 +398,8 @@ export const ScanOverlay = ({
               <span>Choose Model Manually ({phones.length} Models)</span>
             </button>
 
-            {/* Exactly 1 Suggested Model as user requested */}
-            {singleSuggestion && (
+            {/* ONLY show suggested model IF genuinely deduced from camera clues! NEVER RANDOM! */}
+            {suggestedPhone && (
               <div className="pt-1 border-t border-white/10">
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.07] border border-cyan-500/20 transition-all">
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -389,16 +408,16 @@ export const ScanOverlay = ({
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-white font-heading truncate">
-                        {singleSuggestion.displayName || `${singleSuggestion.brand} ${singleSuggestion.model}`}
+                        {suggestedPhone.displayName || `${suggestedPhone.brand} ${suggestedPhone.model}`}
                       </p>
                       <p className="text-[10px] font-mono text-slate-400">
-                        {singleSuggestion.year} • {singleSuggestion.soc || singleSuggestion.chipset}
+                        {suggestedPhone.year} • {suggestedPhone.soc || suggestedPhone.chipset}
                       </p>
                     </div>
                   </div>
                   <button
-                    onClick={() => onConfirm?.(singleSuggestion)}
-                    className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-navy-950 bg-cyan-400 hover:bg-cyan-300 transition-colors flex-shrink-0 shadow-cyan-sm active:scale-95"
+                    onClick={() => onConfirm?.(suggestedPhone)}
+                    className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-navy-950 bg-cyan-400 hover:bg-cyan-300 transition-colors flex-shrink-0 shadow-cyan-sm active:scale-95 cursor-pointer"
                   >
                     Select
                   </button>
