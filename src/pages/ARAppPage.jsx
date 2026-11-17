@@ -372,25 +372,20 @@ export const ARAppPage = () => {
           detectedBBox={detectedBBox}
           videoSize={videoSize}
           onConfirm={(chosen) => {
-            const target =
-              chosen ||
-              detectedPhone ||
-              phones.find((p) => p.id === 'infinix-hot-12-play-2022') ||
-              phones[0];
+            const target = chosen || detectedPhone || activePhone || phones[0];
             setActivePhone(target);
             setPhase('teardown');
           }}
           onWrong={() => {
             setDetectedPhone(null);
+            setDetectedBrand(null);
+            setConfidence(0);
             setIsModelModalOpen(true);
           }}
           onOpenManualPicker={() => setIsModelModalOpen(true)}
           onFlipCamera={toggleFacingMode}
           onSkipToTeardown={() => {
-            const target =
-              detectedPhone ||
-              phones.find((p) => p.id === 'infinix-hot-12-play-2022') ||
-              phones[0];
+            const target = detectedPhone || activePhone || phones[0];
             setActivePhone(target);
             setPhase('teardown');
           }}

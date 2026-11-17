@@ -75,16 +75,16 @@ export const ScanOverlay = ({
     const tokens = rawQ.split(/\s+/).filter(Boolean);
 
     if (!rawQ && !currentBrand) {
-      // Balanced showcase of top popular models (Infinix, Samsung, Apple, OnePlus, POCO, Redmi)
+      // Balanced showcase of top popular models (Apple, Samsung, Infinix, OnePlus, Xiaomi, POCO)
       const topIds = [
-        'infinix-hot-12-play-2022',
-        'infinix-hot-12-2022',
-        'infinix-smart-6-2022',
+        'apple-iphone-15-pro-max-2023',
         'samsung-galaxy-s24-ultra-2024',
-        'apple-iphone-16-pro-max-2024',
-        'infinix-note-12-2022',
+        'infinix-hot-11s-2021',
+        'infinix-hot-12-play-2022',
         'oneplus-oneplus-12-2024',
+        'xiaomi-redmi-note-13-pro-2024',
         'poco-poco-x6-pro-2024',
+        'google-pixel-8-pro-2023',
       ];
       const showcased = topIds.map(id => phones.find(p => p.id === id)).filter(Boolean);
       const remaining = phones.slice(0, 8);
@@ -209,8 +209,11 @@ export const ScanOverlay = ({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                const target = detectedPhone || phones.find(p => p.id === 'infinix-hot-12-play-2022') || phones[0];
-                onConfirm?.(target);
+                if (detectedPhone) {
+                  onConfirm?.(detectedPhone);
+                } else {
+                  onOpenManualPicker?.();
+                }
               }}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-cyan-300 text-navy-950 font-black text-xs shadow-[0_0_20px_#00f0ff] hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
             >
@@ -220,12 +223,15 @@ export const ScanOverlay = ({
 
             {/* Quick-Match 1-Tap Models right on phone */}
             <div className="flex items-center gap-1 flex-wrap justify-center max-w-[280px]">
-              {(detectedBrand?.toLowerCase() === 'infinix' || !detectedPhone ? [
-                { id: 'infinix-hot-12-play-2022', label: 'Hot 12 Play' },
-                { id: 'infinix-hot-12-2022', label: 'Hot 12' },
-                { id: 'infinix-smart-6-2022', label: 'Smart 6' },
-              ] : [
+              {(detectedPhone ? [
                 { id: detectedPhone.id, label: detectedPhone.model },
+              ] : detectedBrand ? (
+                phones.filter(p => p.brand.toLowerCase() === detectedBrand.toLowerCase()).slice(0, 3).map(p => ({ id: p.id, label: p.model }))
+              ) : [
+                { id: 'apple-iphone-15-pro-max-2023', label: 'iPhone 15 Pro' },
+                { id: 'samsung-galaxy-s24-ultra-2024', label: 'S24 Ultra' },
+                { id: 'infinix-hot-11s-2021', label: 'Hot 11S' },
+                { id: 'oneplus-oneplus-12-2024', label: 'OnePlus 12' },
               ]).map(chip => (
                 <button
                   key={chip.id}

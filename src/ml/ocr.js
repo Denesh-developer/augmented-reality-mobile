@@ -145,7 +145,7 @@ const BRAND_PATTERNS = [
 
 /**
  * Scans image canvas with Tesseract OCR with enhanced pre-processing
- * and fuzzy-matches against the 3,338 phone database
+ * and fuzzy-matches against the smartphone database
  */
 export async function recognizePhoneFromImage(imageCanvas) {
   const phones = phonesData;
@@ -160,21 +160,6 @@ export async function recognizePhoneFromImage(imageCanvas) {
   }
 
   try {
-    const visualInfo = analyzePhoneVisuals(imageCanvas);
-    let visualBrand = null;
-    let visualMatchedPhone = null;
-
-    if (visualInfo?.isCyanTeal) {
-      visualBrand = 'Infinix';
-      visualMatchedPhone = phones.find(p => p.id === 'infinix-hot-12-play-2022') || phones.find(p => p.brand.toLowerCase() === 'infinix');
-    } else if (visualInfo?.isPurple) {
-      visualBrand = 'Apple';
-      visualMatchedPhone = phones.find(p => p.id === 'apple-iphone-16-pro-max-2024');
-    } else if (visualInfo?.isYellow) {
-      visualBrand = 'POCO';
-      visualMatchedPhone = phones.find(p => p.brand.toLowerCase() === 'poco');
-    }
-
     const worker = await getOCRWorker();
     const processedCanvas = preprocessForOCR(imageCanvas);
 
@@ -183,10 +168,10 @@ export async function recognizePhoneFromImage(imageCanvas) {
 
     if (!rawText || rawText.length < 2) {
       return {
-        matchedPhone: visualMatchedPhone,
-        detectedBrand: visualBrand,
+        matchedPhone: null,
+        detectedBrand: null,
         detectedText: '',
-        confidence: visualMatchedPhone ? 92 : 0,
+        confidence: 0,
       };
     }
 
@@ -194,24 +179,24 @@ export async function recognizePhoneFromImage(imageCanvas) {
     const cleanWords = rawText.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length >= 2);
     const textJoined = cleanWords.join(' ');
 
-    let detectedBrand = visualBrand;
-    let brandConfidence = visualBrand ? 85 : 0;
+    let detectedBrand = null;
+    let brandConfidence = 0;
 
     // 1. Detect Brand via alias patterns
     for (const bp of BRAND_PATTERNS) {
       for (const alias of bp.aliases) {
         if (textJoined.includes(alias)) {
           detectedBrand = bp.brand;
-          brandConfidence = 90;
+          brandConfidence = 88;
           break;
         }
       }
-      if (detectedBrand && brandConfidence >= 90) break;
+      if (detectedBrand) break;
     }
 
     // 2. Search for exact or closest model in our phone database
-    let bestMatch = visualMatchedPhone;
-    let highestScore = visualMatchedPhone ? 80 : 0;
+    let bestMatch = null;
+    let highestScore = 0;
 
     const candidatePool = detectedBrand
       ? phones.filter((p) => p.brand.toLowerCase() === detectedBrand.toLowerCase())
@@ -224,18 +209,18 @@ export async function recognizePhoneFromImage(imageCanvas) {
 
       // Check full model name in text
       if (textJoined.includes(modelLower)) {
-        score += 70;
+        score += 85;
       } else {
-        // Check individual words (e.g. "hot", "12", "play", "pro")
+        // Check individual words (e.g. "s24", "ultra", "iphone", "15", "pro", "hot", "11s")
         let matchedWords = 0;
         for (const mw of modelWords) {
           if (cleanWords.includes(mw)) {
             matchedWords++;
-            score += 25;
+            score += 30;
           }
         }
         if (matchedWords >= 2 && matchedWords === modelWords.length) {
-          score += 35;
+          score += 40;
         }
       }
 
@@ -255,13 +240,13 @@ export async function recognizePhoneFromImage(imageCanvas) {
       }
     }
 
-    const totalConfidence = Math.min(97, highestScore);
+    const totalConfidence = Math.min(98, highestScore);
 
     return {
-      matchedPhone: totalConfidence >= 55 ? bestMatch : visualMatchedPhone,
+      matchedPhone: totalConfidence >= 60 ? bestMatch : null,
       detectedBrand: detectedBrand || (bestMatch && totalConfidence >= 40 ? bestMatch.brand : null),
       detectedText: textJoined,
-      confidence: totalConfidence > 0 ? totalConfidence : (visualMatchedPhone ? 92 : brandConfidence),
+      confidence: totalConfidence >= 60 ? totalConfidence : (detectedBrand ? brandConfidence : 0),
     };
   } catch (err) {
     console.warn('Enhanced OCR Recognition error:', err);
