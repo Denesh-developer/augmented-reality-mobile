@@ -23,7 +23,8 @@ export async function detectPhoneInVideo(video) {
     }
     try {
         const model = await loadDetectionModel();
-        const predictions = await model.detect(video, 5, 0.45);
+        // Lower threshold to 0.35 so slight tilts and angle movements never drop tracking
+        const predictions = await model.detect(video, 5, 0.35);
         // Look for "cell phone"
         const phonePred = predictions.find((p) => p.class === 'cell phone');
         if (phonePred && phonePred.bbox) {

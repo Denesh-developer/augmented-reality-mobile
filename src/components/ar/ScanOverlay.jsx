@@ -25,6 +25,9 @@ export const ScanOverlay = ({
   isAnalyzing = false,
   hasScannedPhone = false,
   videoSize,
+  isDetectionLocked = false,
+  onRescan,
+  onToggleLock,
   onConfirm,
   onWrong,
   onOpenManualPicker,
@@ -92,9 +95,9 @@ export const ScanOverlay = ({
     });
   }, [phones, inlineSearch]);
 
-  const hasPhoneInFrame = Boolean(detectedBBox);
-  const hasAttemptedScan = Boolean(hasScannedPhone || hasPhoneInFrame);
-  const isConfirmedMatch = Boolean(detectedPhone && confidence >= 75);
+  const hasPhoneInFrame = Boolean(detectedBBox || (isDetectionLocked && detectedPhone));
+  const hasAttemptedScan = Boolean(hasScannedPhone || hasPhoneInFrame || isDetectionLocked);
+  const isConfirmedMatch = Boolean((detectedPhone && confidence >= 75) || (isDetectionLocked && detectedPhone));
   const isSearchActive = inlineSearch.trim().length > 0;
 
   return (
@@ -103,10 +106,10 @@ export const ScanOverlay = ({
       <div className="flex items-center justify-between gap-2 pointer-events-auto flex-wrap">
         {/* Status Radar */}
         <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-950/85 backdrop-blur-md border border-cyan-500/30 text-xs shadow-cyan-sm">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+          <span className={`w-2 h-2 rounded-full ${isDetectionLocked ? 'bg-emerald-400' : 'bg-cyan-400 animate-ping'}`} />
           <span className="font-mono text-cyan-300 font-semibold">
             {isConfirmedMatch
-              ? `🎯 IDENTIFIED: ${detectedPhone.brand} ${detectedPhone.model}`
+              ? (isDetectionLocked ? `🔒 LOCKED: ${detectedPhone.brand} ${detectedPhone.model}` : `🎯 IDENTIFIED: ${detectedPhone.brand} ${detectedPhone.model}`)
               : isAnalyzing
               ? `🔍 Analyzing Hardware...`
               : hasPhoneInFrame
@@ -117,6 +120,15 @@ export const ScanOverlay = ({
             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-200 border border-cyan-500/30">
               {confidence}%
             </span>
+          )}
+          {isConfirmedMatch && onRescan && (
+            <button
+              onClick={onRescan}
+              className="ml-1 p-1 hover:bg-white/10 rounded-full text-slate-300 hover:text-white transition-colors"
+              title="Unlock & Scan Again"
+            >
+              <RotateCcw className="w-3 h-3 text-cyan-400" />
+            </button>
           )}
         </div>
 
@@ -170,7 +182,7 @@ export const ScanOverlay = ({
             <Target className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
             <span className="font-bold">
               {isConfirmedMatch
-                ? `🎯 ${detectedPhone.displayName || detectedPhone.model}`
+                ? (isDetectionLocked ? `🔒 LOCKED: ${detectedPhone.displayName || detectedPhone.model}` : `🎯 ${detectedPhone.displayName || detectedPhone.model}`)
                 : isAnalyzing
                 ? `🔍 Analyzing device...`
                 : '📱 Smartphone Tracked'}
@@ -353,13 +365,13 @@ export const ScanOverlay = ({
             </p>
           </div>
         ) : isConfirmedMatch ? (
-          /* D. CONFIRMED HIGH-CONFIDENCE MATCH CARD */
-          <div className="glass-card p-4 rounded-2xl border border-cyan-500/40 shadow-2xl space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          /* D. CONFIRMED HIGH-CONFIDENCE MATCH CARD (LOCKED & PERSISTENT) */
+          <div className="glass-card p-4 rounded-2xl border border-emerald-500/50 shadow-2xl space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
             <div className="flex items-center justify-between">
               <div>
                 <span className="text-xs text-slate-400 font-mono flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  Recognized Device:
+                  {isDetectionLocked ? '🔒 Target Locked (Steady):' : 'Recognized Device:'}
                 </span>
                 <h4 className="text-base font-bold font-heading text-white">
                   {detectedPhone.brand} {detectedPhone.model}
@@ -368,26 +380,26 @@ export const ScanOverlay = ({
                   {detectedPhone.year} • {detectedPhone.soc || detectedPhone.chipset}
                 </p>
               </div>
-              <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40">
-                {confidence}% Match
+              <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-bold">
+                {isDetectionLocked ? '🔒 LOCKED' : `${confidence}% Match`}
               </span>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => onConfirm?.(detectedPhone)}
-                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-navy-950 bg-gradient-to-r from-cyan-400 to-cyan-300 shadow-cyan-glow hover:opacity-95 cursor-pointer"
+                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-navy-950 bg-gradient-to-r from-emerald-400 to-cyan-300 shadow-cyan-glow hover:opacity-95 cursor-pointer"
               >
                 <Check className="w-4 h-4 stroke-[3]" />
                 <span>Project in AR Now</span>
               </button>
 
               <button
-                onClick={onOpenManualPicker}
+                onClick={onRescan || onOpenManualPicker}
                 className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer"
               >
-                <Search className="w-4 h-4 text-cyan-400" />
-                <span>Choose Manually</span>
+                <RotateCcw className="w-4 h-4 text-cyan-400" />
+                <span>Scan Another Phone</span>
               </button>
             </div>
           </div>

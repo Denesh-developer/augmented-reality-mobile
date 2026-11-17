@@ -47,6 +47,14 @@ export const ARAppPage = () => {
     const [detectedBBox, setDetectedBBox] = useState(null);
     const [videoSize, setVideoSize] = useState({ width: 1280, height: 720 });
     const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+    // Detection Lock (Locks once detected so slight phone movements never cause flickering)
+    const [isDetectionLocked, setIsDetectionLocked] = useState(false);
+    const isDetectionLockedRef = useRef(false);
+    const smoothedBBoxRef = useRef(null);
+    const missedDetectionFramesRef = useRef(0);
+    useEffect(() => {
+        isDetectionLockedRef.current = isDetectionLocked;
+    }, [isDetectionLocked]);
     // Hand Tracking Visibility
     const [showHandOverlay, setShowHandOverlay] = useState(true);
     // Quality Setting
@@ -136,34 +144,58 @@ export const ARAppPage = () => {
                 if (video.videoWidth > 0 && video.videoHeight > 0) {
                     setVideoSize({ width: video.videoWidth, height: video.videoHeight });
                 }
-                // A. Scanning Phase: Object Detection (Throttled to 4 FPS / 250ms)
+                // A. Scanning Phase: Object Detection (Throttled to 4 FPS / 250ms with Auto-Lock on Detection)
                 if (phase === 'scanning') {
                     if (timestamp - lastDetectionTimeRef.current > 250) {
                         lastDetectionTimeRef.current = timestamp;
                         try {
+                            // If already locked on a detected phone, keep locked! Do NOT wipe out or flicker.
+                            if (isDetectionLockedRef.current) {
+                                const detectRes = await detectPhoneInVideo(video);
+                                if (detectRes.detected && detectRes.bbox) {
+                                    if (!smoothedBBoxRef.current) {
+                                        smoothedBBoxRef.current = [...detectRes.bbox];
+                                    } else {
+                                        for (let i = 0; i < 4; i++) {
+                                            smoothedBBoxRef.current[i] += (detectRes.bbox[i] - smoothedBBoxRef.current[i]) * 0.4;
+                                        }
+                                    }
+                                    setDetectedBBox([...smoothedBBoxRef.current]);
+                                }
+                                return;
+                            }
+
                             const detectRes = await detectPhoneInVideo(video);
-                            if (detectRes.detected) {
-                                setDetectedBBox(detectRes.bbox);
+                            if (detectRes.detected && detectRes.bbox) {
+                                missedDetectionFramesRef.current = 0;
+                                if (!smoothedBBoxRef.current) {
+                                    smoothedBBoxRef.current = [...detectRes.bbox];
+                                } else {
+                                    for (let i = 0; i < 4; i++) {
+                                        smoothedBBoxRef.current[i] += (detectRes.bbox[i] - smoothedBBoxRef.current[i]) * 0.45;
+                                    }
+                                }
+                                setDetectedBBox([...smoothedBBoxRef.current]);
                                 setHasScannedPhone(true);
-                                if (detectRes.croppedCanvas && !isOCRRunningRef.current) {
+
+                                if (detectRes.croppedCanvas && !isOCRRunningRef.current && !isDetectionLockedRef.current) {
                                     isOCRRunningRef.current = true;
                                     setIsAnalyzing(true);
                                     recognizePhoneFromImage(detectRes.croppedCanvas)
                                         .then((ocrRes) => {
+                                            if (isDetectionLockedRef.current) return;
+
                                             if (ocrRes.matchedPhone && ocrRes.confidence >= 75) {
                                                 setDetectedPhone(ocrRes.matchedPhone);
                                                 setSuggestedPhone(ocrRes.matchedPhone);
                                                 setConfidence(ocrRes.confidence);
+                                                // LOCK IMMEDIATELY: Once detected, lock so moving slightly never causes flickering!
+                                                setIsDetectionLocked(true);
+                                                isDetectionLockedRef.current = true;
                                             } else if (ocrRes.suggestedPhone) {
                                                 setSuggestedPhone(ocrRes.suggestedPhone);
                                                 setDetectedBrand(ocrRes.detectedBrand);
                                                 setConfidence(ocrRes.confidence);
-                                                setDetectedPhone(null);
-                                            } else {
-                                                setDetectedPhone(null);
-                                                setSuggestedPhone(null);
-                                                setDetectedBrand(null);
-                                                setConfidence(0);
                                             }
                                         })
                                         .finally(() => {
@@ -172,7 +204,13 @@ export const ARAppPage = () => {
                                         });
                                 }
                             } else {
-                                setDetectedBBox(null);
+                                // Grace period: require 5 consecutive missed frames before clearing bbox
+                                // so tilting or moving the phone slightly does not cause detection to flicker or disappear!
+                                missedDetectionFramesRef.current++;
+                                if (missedDetectionFramesRef.current > 5 && !isDetectionLockedRef.current) {
+                                    smoothedBBoxRef.current = null;
+                                    setDetectedBBox(null);
+                                }
                             }
                         } catch {
                             // Safe fallback
@@ -303,9 +341,23 @@ export const ARAppPage = () => {
         setActivePhone(target);
         setDetectedPhone(target);
         setConfidence(97);
+        setIsDetectionLocked(true);
+        isDetectionLockedRef.current = true;
         if (autoLaunch) {
             setPhase('teardown');
         }
+    };
+    const handleRescan = () => {
+        setIsDetectionLocked(false);
+        isDetectionLockedRef.current = false;
+        setDetectedPhone(null);
+        setSuggestedPhone(null);
+        setDetectedBrand(null);
+        setConfidence(0);
+        setDetectedBBox(null);
+        smoothedBBoxRef.current = null;
+        missedDetectionFramesRef.current = 0;
+        setHasScannedPhone(false);
     };
     // Screenshot Capture
     const handleScreenshot = () => {
@@ -390,6 +442,13 @@ export const ARAppPage = () => {
           isAnalyzing={isAnalyzing}
           hasScannedPhone={hasScannedPhone}
           videoSize={videoSize}
+          isDetectionLocked={isDetectionLocked}
+          onRescan={handleRescan}
+          onToggleLock={() => {
+            const next = !isDetectionLockedRef.current;
+            setIsDetectionLocked(next);
+            isDetectionLockedRef.current = next;
+          }}
           onConfirm={(chosen) => {
             const target = chosen || (detectedPhone && confidence >= 75 ? detectedPhone : null);
             if (target) {
