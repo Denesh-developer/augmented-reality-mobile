@@ -1177,22 +1177,60 @@ export function createPhone(config) {
     camGroup.add(l1, l2, l3, l4);
 
   } else if (camLayout === 'redmi_deco_column') {
-    // 6C. Redmi Note Series Stepped Camera Plateau with Silver Accent Halo
-    const camShape = createRoundedRectShape(0.72, 1.35, 0.22);
-    const islandGeo = new THREE.ExtrudeGeometry(camShape, { depth: 0.075, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.015, bevelThickness: 0.015 });
-    islandGeo.center();
-    disposables.push(islandGeo);
-    const islandMat = new THREE.MeshPhysicalMaterial({ color: phoneColor.clone().offsetHSL(0, 0, -0.06), metalness: 0.88, roughness: 0.2, clearcoat: 0.9 });
-    disposables.push(islandMat);
-    const islandMesh = new THREE.Mesh(islandGeo, islandMat);
+    // 6C. Redmi Note 10 Pro / Note 11: Stepped Dual-Tier Camera Plateau with Metallic Silver Top Plate & 108MP Chrome Halo
+    // Tier 1: Glossy Black Glass Base Island
+    const baseShape = createRoundedRectShape(0.76, 1.48, 0.20);
+    const baseGeo = new THREE.ExtrudeGeometry(baseShape, { depth: 0.075, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.015, bevelThickness: 0.015 });
+    baseGeo.center();
+    disposables.push(baseGeo);
+    const baseMat = new THREE.MeshPhysicalMaterial({ color: 0x090b10, metalness: 0.94, roughness: 0.12, clearcoat: 1.0 });
+    disposables.push(baseMat);
+    const islandMesh = new THREE.Mesh(baseGeo, baseMat);
     islandMesh.position.set(w / 2 - 0.48, h / 2 - 0.74, -t / 2 - 0.05);
     camGroup.add(islandMesh);
 
     const ip = islandMesh.position;
-    const l1 = createOpticalLens(0.20, new THREE.Vector3(ip.x, ip.y + 0.38, ip.z - 0.045));
-    const l2 = createOpticalLens(0.14, new THREE.Vector3(ip.x - 0.12, ip.y - 0.18, ip.z - 0.045));
-    const l3 = createOpticalLens(0.14, new THREE.Vector3(ip.x + 0.12, ip.y - 0.18, ip.z - 0.045));
-    camGroup.add(l1, l2, l3);
+
+    // Tier 2: Stepped Polished Metallic Silver/Chrome Top Plate (Exact Google Reference Specs)
+    const silverPlateShape = createRoundedRectShape(0.70, 0.68, 0.16);
+    const silverPlateGeo = new THREE.ExtrudeGeometry(silverPlateShape, { depth: 0.025, bevelEnabled: true, bevelSegments: 3, bevelSize: 0.012, bevelThickness: 0.012 });
+    silverPlateGeo.center();
+    disposables.push(silverPlateGeo);
+    const chromeMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.98, roughness: 0.10 });
+    disposables.push(chromeMat);
+    const silverPlate = new THREE.Mesh(silverPlateGeo, chromeMat);
+    silverPlate.position.set(ip.x, ip.y + 0.36, ip.z - 0.042);
+    camGroup.add(silverPlate);
+
+    // Giant 108MP Main Camera Halo Bezel Ring (Polished Mirror Chrome)
+    const haloRingGeo = new THREE.CylinderGeometry(0.24, 0.24, 0.035, 36);
+    haloRingGeo.rotateX(Math.PI / 2);
+    disposables.push(haloRingGeo);
+    const haloRing = new THREE.Mesh(haloRingGeo, chromeMat);
+    haloRing.position.set(ip.x, ip.y + 0.36, ip.z - 0.052);
+    camGroup.add(haloRing);
+
+    // Primary 108MP Optical Aperture
+    const lMain = createOpticalLens(0.18, new THREE.Vector3(ip.x, ip.y + 0.36, ip.z - 0.062));
+    camGroup.add(lMain);
+
+    // Tier 3: Lower Auxiliary Cluster (8MP Ultrawide + 5MP Telemacro + 2MP Depth + LED Flash)
+    // Left column: 2 auxiliary lenses
+    const lAux1 = createOpticalLens(0.095, new THREE.Vector3(ip.x - 0.14, ip.y - 0.16, ip.z - 0.045));
+    const lAux2 = createOpticalLens(0.095, new THREE.Vector3(ip.x - 0.14, ip.y - 0.42, ip.z - 0.045));
+    camGroup.add(lAux1, lAux2);
+
+    // Right column: 1 auxiliary lens + vertical flash capsule
+    const lAux3 = createOpticalLens(0.095, new THREE.Vector3(ip.x + 0.14, ip.y - 0.16, ip.z - 0.045));
+    camGroup.add(lAux3);
+
+    // Vertical Flash Unit
+    const flashGeo = new THREE.CapsuleGeometry(0.032, 0.12, 8, 16);
+    const flashMat = new THREE.MeshStandardMaterial({ color: 0xfff6cf, emissive: 0xffd269, emissiveIntensity: 0.8, roughness: 0.25 });
+    disposables.push(flashGeo, flashMat);
+    const flash = new THREE.Mesh(flashGeo, flashMat);
+    flash.position.set(ip.x + 0.14, ip.y - 0.42, ip.z - 0.045);
+    camGroup.add(flash);
 
   } else if (camLayout === 'vivo_zeiss_sunburst') {
     // 7. Vivo / iQOO Zeiss Circular Sunburst Dial

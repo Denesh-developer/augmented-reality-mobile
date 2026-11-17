@@ -1192,16 +1192,29 @@ export function createBackPanelTexture(config) {
   } else if (ctx_info.isXiaomi) {
     // 8. XIAOMI / REDMI (Premium AG Glass / Ceramic Sheen)
     const miGrad = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, 100, canvas.width / 2, canvas.height / 2, 850);
-    miGrad.addColorStop(0, 'rgba(255, 255, 255, 0.06)');
-    miGrad.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
+    miGrad.addColorStop(0, 'rgba(255, 255, 255, 0.08)');
+    miGrad.addColorStop(1, 'rgba(0, 0, 0, 0.16)');
     ctx.fillStyle = miGrad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Bottom Branding
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '700 64px "Space Grotesk", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText((config.brand || 'XIAOMI').toUpperCase(), canvas.width / 2, 1880);
+    const isRedmiModel = (config.brand || '').toLowerCase() === 'redmi' || (config.model || '').toLowerCase().includes('redmi');
+    if (isRedmiModel) {
+      // Bottom-Left Distinct Redmi Typography (Exact Google Reference Specs)
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 84px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Redmi', 100, 1850);
+
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.65)';
+      ctx.font = '500 22px "Inter", sans-serif';
+      ctx.fillText('DESIGNED BY REDMI', 100, 1905);
+    } else {
+      // Xiaomi Centered Branding
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '700 64px "Space Grotesk", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText((config.brand || 'XIAOMI').toUpperCase(), canvas.width / 2, 1880);
+    }
 
   } else if (ctx_info.isVivo) {
     // 9. VIVO / iQOO (Fluorite AG Velvet Sheen)

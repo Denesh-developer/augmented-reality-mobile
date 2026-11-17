@@ -221,8 +221,8 @@ for r in range(2, ws.max_row + 1):
             color_name = 'Midnight Black / Aurora Green'
         else:
             cam_layout = 'redmi_deco_column'
-            color = '#1e272e'
-            color_name = 'Glacier Blue / Onyx Gray'
+            color = '#2d3436'
+            color_name = 'Onyx Gray / Dark Nebula'
         w = 75.3
         h = 161.4
         t = 8.0
@@ -284,11 +284,16 @@ for r in range(2, ws.max_row + 1):
         h = 163.7
         t = 8.5
 
+    clean_model = model
+    if clean_model.lower().startswith(brand.lower() + " "):
+        clean_model = clean_model[len(brand):].strip()
+    disp_name = f"{brand} {clean_model}"
+
     phone_obj = {
         "id": pid,
         "brand": brand,
-        "model": model,
-        "displayName": f"{brand} {model}",
+        "model": clean_model,
+        "displayName": disp_name,
         "year": year,
         "series": model.split()[0] if model else brand,
         "segment": "Flagship" if any(k in m_low for k in ['ultra', 'pro max', 'pro+', 'fold', 'find x']) else ("Mid-Range" if any(k in m_low for k in ['pro', 'plus', 'gt', 'note', 'edge']) else "Budget"),
