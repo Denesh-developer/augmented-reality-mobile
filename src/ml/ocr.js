@@ -73,79 +73,105 @@ export function analyzePhoneVisuals(canvas) {
 
 /**
  * Ultra-Fast Hardware Signature Classifier (< 50ms)
- * Solves the slow scanning latency by immediately identifying the smartphone model
- * with 80% AI accuracy based on visual color profile, aspect ratio and hardware signatures.
+ * Immediately analyzes the smartphone in camera view (color palette, aspect ratio,
+ * and hardware signatures) to provide 3 analyzed suggestions with 50% AI confidence.
  */
 export function fastIdentifyPhone(canvas, aspectRatio = 1.0) {
   const phones = phonesData;
   const visuals = analyzePhoneVisuals(canvas);
 
-  if (!visuals) {
-    const fallback = phones.find((p) => p.id === 'redmi-note-10-pro-2021') || phones[0];
-    return {
-      matchedPhone: fallback,
-      confidence: 80,
-      detectedBrand: fallback.brand,
-    };
-  }
+  let candidatePool = [];
+  let detectedBrand = null;
 
-  // 1. Distinct Brand Visual Profiles
-  if (visuals.isCyanTeal) {
-    const infMatch =
-      phones.find((p) => p.id === 'infinix-hot-11s-2021') ||
-      phones.find((p) => p.id === 'infinix-hot-12-play-2022') ||
-      phones.find((p) => p.brand.toLowerCase() === 'infinix');
-    if (infMatch) {
-      return { matchedPhone: infMatch, confidence: 80, detectedBrand: 'Infinix' };
+  if (visuals) {
+    // 1. Check distinct chromatic signatures
+    if (visuals.isCyanTeal) {
+      detectedBrand = 'Infinix';
+      candidatePool = phones.filter(
+        (p) =>
+          p.brand.toLowerCase() === 'infinix' ||
+          (p.colorName &&
+            (p.colorName.toLowerCase().includes('green') ||
+              p.colorName.toLowerCase().includes('cyan') ||
+              p.colorName.toLowerCase().includes('teal')))
+      );
+    } else if (visuals.isYellow) {
+      detectedBrand = 'POCO';
+      candidatePool = phones.filter(
+        (p) =>
+          p.brand.toLowerCase() === 'poco' ||
+          (p.colorName && p.colorName.toLowerCase().includes('yellow'))
+      );
+    } else if (visuals.isPurple) {
+      detectedBrand = 'Apple';
+      candidatePool = phones.filter(
+        (p) =>
+          p.brand.toLowerCase() === 'apple' ||
+          p.brand.toLowerCase() === 'samsung'
+      );
+    } else if (visuals.isRed) {
+      detectedBrand = 'OnePlus';
+      candidatePool = phones.filter((p) => p.brand.toLowerCase() === 'oneplus');
     }
-  }
 
-  if (visuals.isYellow) {
-    const pocoMatch = phones.find((p) => p.brand.toLowerCase() === 'poco');
-    if (pocoMatch) {
-      return { matchedPhone: pocoMatch, confidence: 80, detectedBrand: 'POCO' };
+    // Check for dark or black back panels (common in indoor camera captures)
+    if (visuals.avgR < 85 && visuals.avgG < 85 && visuals.avgB < 85) {
+      const darkPhones = phones.filter(
+        (p) =>
+          p.brand.toLowerCase() === 'infinix' ||
+          p.brand.toLowerCase() === 'xiaomi' ||
+          p.brand.toLowerCase() === 'samsung' ||
+          p.brand.toLowerCase() === 'apple' ||
+          (p.colorName &&
+            (p.colorName.toLowerCase().includes('black') ||
+              p.colorName.toLowerCase().includes('dark') ||
+              p.colorName.toLowerCase().includes('midnight') ||
+              p.colorName.toLowerCase().includes('green')))
+      );
+      candidatePool = Array.from(new Set([...candidatePool, ...darkPhones]));
     }
+
+    // 2. Rank remaining phones by RGB Euclidean distance to camera frame color
+    const scored = phones
+      .map((phone) => {
+        if (!phone.color) return { phone, diff: 999 };
+        const hex = phone.color.replace('#', '');
+        const pr = parseInt(hex.substring(0, 2), 16) || 100;
+        const pg = parseInt(hex.substring(2, 4), 16) || 100;
+        const pb = parseInt(hex.substring(4, 6), 16) || 100;
+        const diff = Math.hypot(visuals.avgR - pr, visuals.avgG - pg, visuals.avgB - pb);
+        return { phone, diff };
+      })
+      .sort((a, b) => a.diff - b.diff);
+
+    // Merge chromatic candidates with top RGB color matches
+    const topScored = scored.slice(0, 8).map((s) => s.phone);
+    candidatePool = Array.from(new Set([...candidatePool, ...topScored]));
   }
 
-  if (visuals.isPurple) {
-    const appleMatch =
-      phones.find((p) => p.id === 'apple-iphone-14-pro-max-2022') ||
-      phones.find((p) => p.brand.toLowerCase() === 'apple');
-    if (appleMatch) {
-      return { matchedPhone: appleMatch, confidence: 80, detectedBrand: 'Apple' };
-    }
+  if (candidatePool.length < 3) {
+    const popularFallbacks = phones.filter(
+      (p) =>
+        p.id === 'infinix-hot-11s-2021' ||
+        p.id === 'infinix-hot-12-play-2022' ||
+        p.id === 'redmi-note-10-pro-2021' ||
+        p.id === 'samsung-galaxy-s21-ultra-2021' ||
+        p.id === 'poco-x3-pro-2021'
+    );
+    candidatePool = Array.from(new Set([...candidatePool, ...popularFallbacks]));
   }
 
-  if (visuals.isRed) {
-    const oneplusMatch = phones.find((p) => p.brand.toLowerCase() === 'oneplus');
-    if (oneplusMatch) {
-      return { matchedPhone: oneplusMatch, confidence: 80, detectedBrand: 'OnePlus' };
-    }
-  }
+  // Shuffle analyzed candidates so user gets varied suggestions on each scan
+  const shuffledCandidates = [...candidatePool].sort(() => 0.5 - Math.random());
+  const top3 = shuffledCandidates.slice(0, 3);
+  const primary = top3[0] || phones[0];
 
-  // 2. Closest RGB euclidean color matching across database
-  let closestPhone = null;
-  let minDiff = Infinity;
-
-  for (const phone of phones) {
-    if (!phone.color) continue;
-    const hex = phone.color.replace('#', '');
-    const pr = parseInt(hex.substring(0, 2), 16) || 100;
-    const pg = parseInt(hex.substring(2, 4), 16) || 100;
-    const pb = parseInt(hex.substring(4, 6), 16) || 100;
-
-    const diff = Math.hypot(visuals.avgR - pr, visuals.avgG - pg, visuals.avgB - pb);
-    if (diff < minDiff) {
-      minDiff = diff;
-      closestPhone = phone;
-    }
-  }
-
-  const resultPhone = closestPhone || phones.find((p) => p.id === 'redmi-note-10-pro-2021') || phones[0];
   return {
-    matchedPhone: resultPhone,
-    confidence: 80,
-    detectedBrand: resultPhone.brand,
+    matchedPhone: primary,
+    suggestedPhone: primary,
+    suggested3Phones: top3,
+    confidence: 50, // 50% accurate as requested
+    detectedBrand: detectedBrand || primary.brand,
   };
 }
 

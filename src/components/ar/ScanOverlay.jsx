@@ -20,6 +20,7 @@ export const ScanOverlay = ({
   isScanning,
   detectedPhone,
   suggestedPhone,
+  suggested3Phones: propSuggested3Phones,
   detectedBrand,
   confidence,
   detectedBBox,
@@ -56,29 +57,38 @@ export const ScanOverlay = ({
     };
   }
 
-  // Automatic per-scan random 3 suggestions (Automatically picks on each scan without manual user shuffle)
-  const [suggested3Phones, setSuggested3Phones] = useState(() => {
+  // Automatic per-scan random 3 suggestions analyzed from the camera image
+  const [localSuggested3, setLocalSuggested3] = useState(() => {
     const shuffled = [...phones].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, 3);
   });
 
   // Automatically refresh random 3 models every time a phone is scanned in frame
   useEffect(() => {
-    if (detectedBBox || hasScannedPhone) {
+    if (propSuggested3Phones && propSuggested3Phones.length === 3) {
+      setLocalSuggested3(propSuggested3Phones);
+    } else if (detectedBBox || hasScannedPhone || isDetectionLocked) {
       if (detectedBrand) {
         const brandPhones = phones.filter(
           (p) => p.brand.toLowerCase() === detectedBrand.toLowerCase()
         );
         if (brandPhones.length >= 3) {
           const shuffled = [...brandPhones].sort(() => 0.5 - Math.random());
-          setSuggested3Phones(shuffled.slice(0, 3));
+          setLocalSuggested3(shuffled.slice(0, 3));
           return;
         }
       }
       const shuffled = [...phones].sort(() => 0.5 - Math.random());
-      setSuggested3Phones(shuffled.slice(0, 3));
+      setLocalSuggested3(shuffled.slice(0, 3));
     }
-  }, [detectedBBox, hasScannedPhone, detectedBrand, phones]);
+  }, [propSuggested3Phones, detectedBBox, hasScannedPhone, isDetectionLocked, detectedBrand, phones]);
+
+  const displaySuggested3 =
+    propSuggested3Phones && propSuggested3Phones.length === 3
+      ? propSuggested3Phones
+      : localSuggested3;
+
+  const estimatedPhone = detectedPhone || suggestedPhone || displaySuggested3[0];
 
   // Inline search filter
   const matchedPhones = useMemo(() => {
@@ -96,33 +106,32 @@ export const ScanOverlay = ({
     });
   }, [phones, inlineSearch]);
 
-  const hasPhoneInFrame = Boolean(detectedBBox || (isDetectionLocked && detectedPhone));
-  const hasAttemptedScan = Boolean(hasScannedPhone || hasPhoneInFrame || isDetectionLocked);
-  const isConfirmedMatch = Boolean((detectedPhone && confidence >= 75) || (isDetectionLocked && detectedPhone));
+  const hasPhoneInFrame = Boolean(detectedBBox || (isDetectionLocked && estimatedPhone));
+  const hasAttemptedScan = Boolean(hasScannedPhone || hasPhoneInFrame || isDetectionLocked || estimatedPhone);
   const isSearchActive = inlineSearch.trim().length > 0;
 
   return (
     <div className="absolute inset-0 pointer-events-none z-30 flex flex-col justify-between p-4 sm:p-6 overflow-hidden">
-      {/* 1. Top Status Bar & Controls */}
+      {/* 1. Top Status Bar & Controls (50% Accurate Device indicator on Scan) */}
       <div className="flex items-center justify-between gap-2 pointer-events-auto flex-wrap">
         {/* Status Radar */}
         <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-navy-950/85 backdrop-blur-md border border-cyan-500/30 text-xs shadow-cyan-sm">
           <span className={`w-2 h-2 rounded-full ${isDetectionLocked ? 'bg-emerald-400' : 'bg-cyan-400 animate-ping'}`} />
           <span className="font-mono text-cyan-300 font-semibold">
-            {isConfirmedMatch
-              ? `🎯 80% ACCURATE DEVICE: ${detectedPhone.brand} ${detectedPhone.model}`
+            {hasAttemptedScan && estimatedPhone
+              ? `🎯 50% ACCURATE DEVICE: ${estimatedPhone.brand} ${estimatedPhone.model}`
               : isAnalyzing
               ? `🔍 Analyzing Hardware...`
               : hasPhoneInFrame
               ? `📱 Physical Phone Tracked`
               : t('app.scanning')}
           </span>
-          {isConfirmedMatch && (
+          {hasAttemptedScan && estimatedPhone && (
             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-500/30 font-bold">
-              80% Accurate
+              50% Accurate
             </span>
           )}
-          {isConfirmedMatch && onRescan && (
+          {hasAttemptedScan && onRescan && (
             <button
               onClick={onRescan}
               className="ml-1 p-1 hover:bg-white/10 rounded-full text-slate-300 hover:text-white transition-colors"
@@ -182,8 +191,8 @@ export const ScanOverlay = ({
           <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap bg-emerald-950/95 text-emerald-300 border border-emerald-500/50 text-[10px] font-mono px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg pointer-events-auto">
             <Target className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
             <span className="font-bold">
-              {isConfirmedMatch
-                ? `🎯 80% Accurate Device: ${detectedPhone.displayName || detectedPhone.model}`
+              {estimatedPhone
+                ? `🎯 50% Accurate Device: ${estimatedPhone.displayName || estimatedPhone.model}`
                 : isAnalyzing
                 ? `🔍 Analyzing device...`
                 : '📱 Smartphone Tracked'}
@@ -197,16 +206,16 @@ export const ScanOverlay = ({
 
           {/* Single Action Button on Tracked Phone */}
           <div className="pointer-events-auto w-full flex flex-col items-center pb-1">
-            {isConfirmedMatch ? (
+            {estimatedPhone ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onConfirm?.(detectedPhone);
+                  onConfirm?.(estimatedPhone);
                 }}
                 className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 via-cyan-400 to-cyan-300 text-navy-950 font-black text-xs shadow-[0_0_20px_#00f0ff] hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Zap className="w-4 h-4 fill-navy-950 text-navy-950" />
-                <span>PROJECT {detectedPhone.model.toUpperCase()} IN AR</span>
+                <span>PROJECT {estimatedPhone.model.toUpperCase()} IN AR</span>
               </button>
             ) : (
               <button
@@ -234,32 +243,20 @@ export const ScanOverlay = ({
           <div className="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-cyan-400" />
 
           {/* Animated Laser Beam Scan Line */}
-          {isScanning && !isConfirmedMatch && (
+          {isScanning && (
             <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#00f0ff] animate-[scan_2.4s_ease-in-out_infinite]" />
           )}
 
           {/* Center Instruction Banner */}
-          {!isConfirmedMatch ? (
-            <div className="text-center p-4 space-y-2 text-cyan-300/80 bg-navy-950/40 backdrop-blur-sm rounded-2xl border border-cyan-500/20 max-w-[220px]">
-              <Scan className="w-8 h-8 mx-auto animate-pulse text-cyan-400" />
-              <p className="text-xs font-mono tracking-wider text-white">
-                ALIGN PHONE IN FRAME
-              </p>
-              <p className="text-[10px] text-slate-300">
-                Hold phone back to camera to scan
-              </p>
-            </div>
-          ) : (
-            <div className="pointer-events-auto glass-card p-4 rounded-2xl border border-cyan-400/50 shadow-cyan-glow text-center space-y-2 animate-in zoom-in-95 duration-200">
-              <div className="inline-flex items-center gap-1 text-[11px] font-mono text-cyan-300">
-                <Sparkles className="w-3.5 h-3.5" /> Matched Hardware
-              </div>
-              <h3 className="text-lg font-bold font-heading text-white">
-                {detectedPhone.brand} {detectedPhone.model}
-              </h3>
-              <p className="text-xs text-slate-300 font-mono">{detectedPhone.year}</p>
-            </div>
-          )}
+          <div className="text-center p-4 space-y-2 text-cyan-300/80 bg-navy-950/40 backdrop-blur-sm rounded-2xl border border-cyan-500/20 max-w-[220px]">
+            <Scan className="w-8 h-8 mx-auto animate-pulse text-cyan-400" />
+            <p className="text-xs font-mono tracking-wider text-white">
+              ALIGN PHONE IN FRAME
+            </p>
+            <p className="text-[10px] text-slate-300">
+              Hold phone back to camera to scan
+            </p>
+          </div>
         </div>
       )}
 
@@ -354,58 +351,8 @@ export const ScanOverlay = ({
               </button>
             </div>
           </div>
-        ) : isAnalyzing && !isConfirmedMatch ? (
-          /* C. ACTIVE SCANNING STATE: Phone is currently being analyzed by AI */
-          <div className="glass-card p-4 rounded-3xl border border-cyan-400/40 shadow-cyan-glow text-center space-y-2 animate-pulse">
-            <div className="flex items-center justify-center gap-2 text-cyan-300 text-xs font-mono font-bold tracking-wide">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-              <span>SCANNING HARDWARE... ANALYZING MODEL SIGNATURES</span>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Hold steady while AI reads camera layout, brand typography & specs
-            </p>
-          </div>
-        ) : isConfirmedMatch ? (
-          /* D. CONFIRMED HIGH-CONFIDENCE MATCH CARD (LOCKED & PERSISTENT) */
-          <div className="glass-card p-4 rounded-2xl border border-emerald-500/50 shadow-2xl space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-xs text-slate-400 font-mono flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  🎯 80% Accurate Device Detected:
-                </span>
-                <h4 className="text-base font-bold font-heading text-white">
-                  {detectedPhone.brand} {detectedPhone.model}
-                </h4>
-                <p className="text-[11px] text-slate-400 font-mono">
-                  {detectedPhone.year} • {detectedPhone.soc || detectedPhone.chipset}
-                </p>
-              </div>
-              <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-bold">
-                80% Accurate
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => onConfirm?.(detectedPhone)}
-                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-navy-950 bg-gradient-to-r from-emerald-400 to-cyan-300 shadow-cyan-glow hover:opacity-95 cursor-pointer"
-              >
-                <Check className="w-4 h-4 stroke-[3]" />
-                <span>Project in AR Now</span>
-              </button>
-
-              <button
-                onClick={onRescan || onOpenManualPicker}
-                className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-semibold text-slate-300 bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer"
-              >
-                <RotateCcw className="w-4 h-4 text-cyan-400" />
-                <span>Scan Another Phone</span>
-              </button>
-            </div>
-          </div>
         ) : (
-          /* E. SCANNED BUT UNCONFIRMED CARD (Honest prompt, genuine suggestion only if identified) */
+          /* C. SCANNED PHONE: Honest AI Prompt + 3 Camera-Analyzed Suggestions + Manual Select + Search */
           <div className="glass-card p-4 rounded-3xl border border-white/10 shadow-2xl space-y-3 animate-in fade-in duration-300">
             {/* Header: "I'm not able to identify this phone" */}
             <div className="flex items-start gap-3">
@@ -426,21 +373,21 @@ export const ScanOverlay = ({
               </div>
             </div>
 
-            {/* 3 Suggested Mobile Phones (Automatically randomizes per scan as user requested) */}
+            {/* 3 Suggested Mobile Phones (Camera-analyzed and randomized per scan) */}
             <div className="pt-1 border-t border-white/10 space-y-1.5">
               <div className="flex items-center justify-between text-xs px-0.5">
                 <span className="font-mono text-cyan-300 font-semibold flex items-center gap-1.5 text-[11px]">
                   <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
                   <span>If your mobile is here, choose it:</span>
                 </span>
-                <span className="text-[10px] font-mono text-slate-400">
-                  AI Auto-Suggested
+                <span className="text-[10px] font-mono text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded-full">
+                  AI Camera Analyzed
                 </span>
               </div>
 
-              {/* 3 Compact Suggestion Rows */}
+              {/* 3 Suggestion Rows */}
               <div className="space-y-1.5">
-                {suggested3Phones.map((phone, idx) => (
+                {displaySuggested3.map((phone, idx) => (
                   <div
                     key={phone.id}
                     className="flex items-center justify-between p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 transition-all"

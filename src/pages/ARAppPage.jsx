@@ -45,6 +45,7 @@ export const ARAppPage = () => {
     }, [detectedPhone]);
     const [detectedBrand, setDetectedBrand] = useState(null);
     const [suggestedPhone, setSuggestedPhone] = useState(null);
+    const [suggested3Phones, setSuggested3Phones] = useState([]);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [hasScannedPhone, setHasScannedPhone] = useState(false);
     const [confidence, setConfidence] = useState(0);
@@ -182,17 +183,20 @@ export const ARAppPage = () => {
                                 setDetectedBBox([...smoothedBBoxRef.current]);
                                 setHasScannedPhone(true);
 
-                                // ULTRA-FAST 80% ACCURATE DEVICE DETECTION (< 50ms)
-                                // Eliminates the 5-10 second OCR delay and immediately displays the 80% accurate device
+                                // ULTRA-FAST 50% ACCURATE DEVICE DETECTION (< 50ms)
+                                // Eliminates scanning delay, provides 3 camera-analyzed suggestions with 50% AI confidence
                                 if (!detectedPhoneRef.current && detectRes.croppedCanvas && !isDetectionLockedRef.current) {
                                     const fastResult = fastIdentifyPhone(detectRes.croppedCanvas, detectRes.aspectRatio);
                                     if (fastResult && fastResult.matchedPhone) {
                                         detectedPhoneRef.current = fastResult.matchedPhone;
                                         setDetectedPhone(fastResult.matchedPhone);
                                         setSuggestedPhone(fastResult.matchedPhone);
-                                        setConfidence(80); // 80% Accurate Device Match
+                                        setConfidence(50); // 50% Accurate Device Match as requested
                                         setIsDetectionLocked(true);
                                         isDetectionLockedRef.current = true;
+                                        if (fastResult.suggested3Phones && fastResult.suggested3Phones.length > 0) {
+                                            setSuggested3Phones(fastResult.suggested3Phones);
+                                        }
                                     }
                                 }
                             } else {
@@ -349,6 +353,7 @@ export const ARAppPage = () => {
         detectedPhoneRef.current = null;
         setDetectedPhone(null);
         setSuggestedPhone(null);
+        setSuggested3Phones([]);
         setDetectedBrand(null);
         setConfidence(0);
         setDetectedBBox(null);
@@ -433,6 +438,7 @@ export const ARAppPage = () => {
           isScanning={true}
           detectedPhone={detectedPhone}
           suggestedPhone={suggestedPhone}
+          suggested3Phones={suggested3Phones}
           detectedBrand={detectedBrand}
           confidence={confidence}
           detectedBBox={detectedBBox}
@@ -461,6 +467,7 @@ export const ARAppPage = () => {
             detectedPhoneRef.current = null;
             setDetectedPhone(null);
             setSuggestedPhone(null);
+            setSuggested3Phones([]);
             setDetectedBrand(null);
             setConfidence(0);
             setIsModelModalOpen(true);
