@@ -23,10 +23,12 @@ export async function detectPhoneInVideo(video) {
     }
     try {
         const model = await loadDetectionModel();
-        // Lower threshold to 0.35 so slight tilts and angle movements never drop tracking
-        const predictions = await model.detect(video, 5, 0.35);
-        // Look for "cell phone"
-        const phonePred = predictions.find((p) => p.class === 'cell phone');
+        // Reliable threshold (0.48) to avoid false positives when no phone is shown
+        const predictions = await model.detect(video, 5, 0.48);
+        // Look for genuine "cell phone" with reasonable physical size in camera
+        const phonePred = predictions.find(
+            (p) => p.class === 'cell phone' && p.bbox && p.bbox[2] >= 50 && p.bbox[3] >= 70
+        );
         if (phonePred && phonePred.bbox) {
             const [x, y, width, height] = phonePred.bbox;
             const aspectRatio = height > 0 ? width / height : 1;

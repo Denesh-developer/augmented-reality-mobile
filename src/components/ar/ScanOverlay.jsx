@@ -57,17 +57,14 @@ export const ScanOverlay = ({
     };
   }
 
-  // Automatic per-scan random 3 suggestions analyzed from the camera image
-  const [localSuggested3, setLocalSuggested3] = useState(() => {
-    const shuffled = [...phones].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 3);
-  });
+  // Suggestions are only populated when the camera actually scans a phone
+  const [localSuggested3, setLocalSuggested3] = useState([]);
 
-  // Automatically refresh random 3 models every time a phone is scanned in frame
+  // Automatically refresh random 3 models every time a phone is physically scanned in frame
   useEffect(() => {
     if (propSuggested3Phones && propSuggested3Phones.length === 3) {
       setLocalSuggested3(propSuggested3Phones);
-    } else if (detectedBBox || hasScannedPhone || isDetectionLocked) {
+    } else if (hasScannedPhone && (detectedBBox || (isDetectionLocked && detectedPhone))) {
       if (detectedBrand) {
         const brandPhones = phones.filter(
           (p) => p.brand.toLowerCase() === detectedBrand.toLowerCase()
@@ -81,33 +78,25 @@ export const ScanOverlay = ({
       const shuffled = [...phones].sort(() => 0.5 - Math.random());
       setLocalSuggested3(shuffled.slice(0, 3));
     }
-  }, [propSuggested3Phones, detectedBBox, hasScannedPhone, isDetectionLocked, detectedBrand, phones]);
+  }, [propSuggested3Phones, detectedBBox, hasScannedPhone, isDetectionLocked, detectedPhone, detectedBrand, phones]);
 
   const displaySuggested3 =
     propSuggested3Phones && propSuggested3Phones.length === 3
       ? propSuggested3Phones
-      : localSuggested3;
+      : localSuggested3.length === 3
+      ? localSuggested3
+      : phones.slice(0, 3);
 
-  const estimatedPhone = detectedPhone || suggestedPhone || displaySuggested3[0];
-
-  // Inline search filter
-  const matchedPhones = useMemo(() => {
-    const rawQ = inlineSearch.toLowerCase().trim();
-    if (!rawQ) return [];
-    const compactQ = rawQ.replace(/[^a-z0-9]/g, '');
-    const tokens = rawQ.split(/\s+/).filter(Boolean);
-
-    return phones.filter((p) => {
-      const searchable = `${p.brand} ${p.model} ${p.displayName} ${p.year} ${p.soc}`.toLowerCase();
-      const compactSearchable = searchable.replace(/[^a-z0-9]/g, '');
-      const allTokens = tokens.every((tok) => searchable.includes(tok));
-      const compact = compactQ.length >= 2 && compactSearchable.includes(compactQ);
-      return allTokens || compact;
-    });
-  }, [phones, inlineSearch]);
+  const estimatedPhone = detectedPhone || suggestedPhone || null;
 
   const hasPhoneInFrame = Boolean(detectedBBox || (isDetectionLocked && estimatedPhone));
-  const hasAttemptedScan = Boolean(hasScannedPhone || hasPhoneInFrame || isDetectionLocked || estimatedPhone);
+  // Strictly false until a physical phone is actually detected in front of camera
+  const hasAttemptedScan = Boolean(
+    (detectedPhone && confidence > 0) ||
+    hasScannedPhone ||
+    (detectedBBox && detectedBBox.length === 4) ||
+    (isDetectionLocked && estimatedPhone)
+  );
   const isSearchActive = inlineSearch.trim().length > 0;
 
   return (
@@ -336,19 +325,27 @@ export const ScanOverlay = ({
           </div>
         ) : !hasAttemptedScan ? (
           /* B. INITIAL STATE: User has NOT shown a phone yet! Keep view completely clean */
-          <div className="max-w-md w-full mx-auto pointer-events-auto text-center space-y-2 animate-in fade-in duration-300">
+          <div className="max-w-md w-full mx-auto pointer-events-auto text-center space-y-2.5 animate-in fade-in duration-300">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-navy-950/80 backdrop-blur-md border border-cyan-500/20 text-xs text-slate-300 shadow-lg">
               <Scan className="w-4 h-4 text-cyan-400 animate-pulse" />
               <span>Hold your phone's back panel to camera to scan</span>
             </div>
-            <div className="flex items-center justify-center gap-3">
-              <button
-                onClick={onOpenManualPicker}
-                className="text-xs text-cyan-400 hover:text-cyan-300 font-semibold underline flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Search className="w-3.5 h-3.5" />
-                <span>Or choose from all {phones.length} models</span>
-              </button>
+            <button
+              onClick={onOpenManualPicker}
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold text-navy-950 bg-gradient-to-r from-cyan-400 to-cyan-300 shadow-cyan-glow hover:opacity-95 active:scale-[0.99] transition-all cursor-pointer"
+            >
+              <Search className="w-4 h-4" />
+              <span>Choose Model Manually ({phones.length} Models)</span>
+            </button>
+            <div className="relative pt-0.5">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Or type model name to search (e.g. Note 10, S24, 15 Pro)..."
+                value={inlineSearch}
+                onChange={(e) => setInlineSearch(e.target.value)}
+                className="w-full bg-navy-950/70 border border-white/10 focus:border-cyan-400/60 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition-all font-mono"
+              />
             </div>
           </div>
         ) : (
